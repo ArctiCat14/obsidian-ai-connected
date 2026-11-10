@@ -1,0 +1,7 @@
+node_modules/
+.npm-cache/
+main.js.map
+test/build/
+*.log
+.DS_Store
+data.json

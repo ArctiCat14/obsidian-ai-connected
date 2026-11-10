@@ -1,0 +1,743 @@
+/* ============================================================
+   AI Connected — vault agent panel
+   ============================================================ */
+
+.ai-connected-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+  font-size: var(--font-ui-small);
+}
+
+/* ------------------------------------------------------------------ header */
+
+.ai-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--size-4-2);
+  padding: var(--size-4-2) var(--size-4-3);
+  border-bottom: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+}
+
+.ai-title {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.ai-title-icon {
+  display: inline-flex;
+  color: var(--interactive-accent);
+}
+
+.ai-title-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.ai-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.ai-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-s);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.ai-icon-btn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.ai-icon-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ---------------------------------------------------------------- messages */
+
+.ai-messages {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--size-4-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-3);
+  scroll-behavior: smooth;
+}
+
+.ai-welcome {
+  margin: auto 0;
+  padding: var(--size-4-3);
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.ai-welcome-title {
+  font-size: 1.05em;
+  font-weight: 600;
+  color: var(--text-normal);
+  margin-bottom: var(--size-4-1);
+}
+
+.ai-welcome-sub {
+  font-size: 0.92em;
+  line-height: 1.5;
+  margin-bottom: var(--size-4-3);
+}
+
+.ai-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-4-2);
+  justify-content: center;
+}
+
+.ai-suggestion {
+  padding: var(--size-4-1) var(--size-4-2);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background: var(--background-primary);
+  color: var(--text-normal);
+  cursor: pointer;
+  font-size: 0.92em;
+}
+
+.ai-suggestion:hover {
+  border-color: var(--interactive-accent);
+  color: var(--interactive-accent);
+}
+
+.ai-msg {
+  display: flex;
+  gap: var(--size-4-2);
+  align-items: flex-start;
+  max-width: 100%;
+}
+
+.ai-msg-user {
+  justify-content: flex-end;
+}
+
+.ai-msg-assistant {
+  justify-content: flex-start;
+}
+
+.ai-avatar {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-top: 2px;
+  border-radius: 50%;
+  background: var(--background-modifier-hover);
+  color: var(--interactive-accent);
+}
+
+.ai-avatar svg {
+  width: 14px;
+  height: 14px;
+}
+
+.ai-bubble {
+  position: relative;
+  max-width: 88%;
+  padding: var(--size-4-2) var(--size-4-3);
+  border-radius: var(--radius-m);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.ai-msg-assistant .ai-bubble {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
+}
+
+.ai-msg-user .ai-bubble {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.ai-bubble-text {
+  white-space: pre-wrap;
+}
+
+.ai-bubble-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-4-1);
+  margin-top: var(--size-4-2);
+  opacity: 0.9;
+}
+
+.ai-bubble-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px;
+  border-radius: var(--radius-s);
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 0.82em;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-bubble-chip svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* markdown inside assistant bubbles */
+.ai-markdown > :first-child {
+  margin-top: 0;
+}
+
+.ai-markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.ai-markdown pre {
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  padding: var(--size-4-2);
+  overflow-x: auto;
+}
+
+.ai-markdown code {
+  font-size: 0.9em;
+}
+
+.ai-markdown table {
+  border-collapse: collapse;
+}
+
+.ai-markdown th,
+.ai-markdown td {
+  border: 1px solid var(--background-modifier-border);
+  padding: 4px 8px;
+}
+
+/* -------------------------------------------------------------- tool calls */
+
+.ai-tool {
+  margin-left: 32px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-primary);
+  font-size: 0.88em;
+  overflow: hidden;
+}
+
+.ai-tool[data-state="done"] {
+  border-color: var(--background-modifier-border);
+}
+
+.ai-tool[data-state="error"] {
+  border-color: var(--text-error);
+}
+
+.ai-tool-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  padding: var(--size-4-1) var(--size-4-2);
+  cursor: pointer;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.ai-tool-summary::-webkit-details-marker {
+  display: none;
+}
+
+.ai-tool-icon {
+  display: inline-flex;
+  color: var(--text-faint);
+}
+
+.ai-tool-icon svg {
+  width: 13px;
+  height: 13px;
+}
+
+.ai-tool-name {
+  font-family: var(--font-monospace);
+  color: var(--text-normal);
+}
+
+.ai-tool-status {
+  margin-left: auto;
+  font-size: 0.85em;
+  color: var(--text-faint);
+}
+
+.ai-tool[data-state="running"] .ai-tool-status {
+  color: var(--interactive-accent);
+}
+
+.ai-tool[data-state="error"] .ai-tool-status {
+  color: var(--text-error);
+}
+
+.ai-tool-args,
+.ai-tool-output {
+  margin: 0;
+  padding: var(--size-4-2);
+  border-top: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  font-family: var(--font-monospace);
+  font-size: 0.85em;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.ai-tool-output {
+  max-height: 320px;
+}
+
+/* ------------------------------------------------------------ status / errors */
+
+.ai-notice {
+  align-self: center;
+  padding: 2px 10px;
+  border-radius: var(--radius-s);
+  background: var(--background-modifier-hover);
+  color: var(--text-muted);
+  font-size: 0.85em;
+}
+
+.ai-error {
+  align-self: stretch;
+  padding: var(--size-4-2);
+  border: 1px solid var(--text-error);
+  border-radius: var(--radius-s);
+  background: rgba(var(--color-red-rgb), 0.08);
+  color: var(--text-error);
+  white-space: pre-wrap;
+  font-size: 0.9em;
+}
+
+/* ---------------------------------------------------------------- composer */
+
+.ai-composer {
+  flex: 0 0 auto;
+  padding: var(--size-4-2) var(--size-4-3) var(--size-4-3);
+  border-top: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+}
+
+.ai-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-4-1);
+  margin-bottom: var(--size-4-2);
+}
+
+.ai-attachments.is-empty {
+  display: none;
+}
+
+.ai-attachment-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 2px 4px 2px 6px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-primary);
+  font-size: 0.82em;
+  color: var(--text-muted);
+}
+
+.ai-attachment-icon,
+.ai-attachment-icon svg {
+  width: 12px;
+  height: 12px;
+  display: inline-flex;
+}
+
+.ai-attachment-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 180px;
+}
+
+.ai-attachment-remove {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+}
+
+.ai-attachment-remove:hover {
+  color: var(--text-error);
+}
+
+.ai-attachment-remove svg {
+  width: 12px;
+  height: 12px;
+}
+
+.ai-input-row {
+  display: flex;
+}
+
+.ai-input {
+  width: 100%;
+  min-height: 64px;
+  max-height: 220px;
+  resize: none;
+  padding: var(--size-4-2) var(--size-4-3);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-family: inherit;
+  font-size: inherit;
+  line-height: 1.5;
+}
+
+.ai-input:focus {
+  outline: none;
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.15);
+}
+
+.ai-button-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--size-4-2);
+  margin-top: var(--size-4-2);
+}
+
+.ai-send-btn,
+.ai-stop-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  height: 30px;
+  border: none;
+  border-radius: var(--radius-m);
+  cursor: pointer;
+  font-size: 0.92em;
+}
+
+.ai-send-btn {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.ai-send-btn:hover {
+  background: var(--interactive-accent-hover);
+}
+
+.ai-send-icon {
+  display: inline-flex;
+}
+
+.ai-send-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.ai-stop-btn {
+  background: var(--background-modifier-error);
+  color: var(--text-on-accent);
+}
+
+.ai-stop-btn:hover {
+  background: var(--background-modifier-error-hover);
+}
+
+.ai-status {
+  margin-top: var(--size-4-2);
+  font-size: 0.8em;
+  color: var(--text-faint);
+  text-align: right;
+  min-height: 1em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.is-hidden {
+  display: none !important;
+}
+
+/* ----------------------------------------------------------------- statusbar */
+
+.ai-status-bar {
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.ai-status-bar.is-running {
+  color: var(--interactive-accent);
+}
+
+/* ------------------------------------------------------------------ settings */
+
+.ai-settings .ai-settings-intro {
+  color: var(--text-muted);
+  margin-bottom: var(--size-4-3);
+}
+
+.ai-settings h3 {
+  margin-top: var(--size-4-5);
+  padding-top: var(--size-4-3);
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.ai-server-status {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  padding: var(--size-4-2);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-secondary);
+  font-size: 0.92em;
+}
+
+.ai-server-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-faint);
+}
+
+.ai-server-dot.is-running {
+  background: var(--color-green);
+}
+
+.ai-endpoint {
+  margin-left: auto;
+  font-size: 0.9em;
+  color: var(--text-muted);
+}
+
+.ai-token-input {
+  font-family: var(--font-monospace);
+  width: 280px;
+  font-size: 0.82em;
+}
+
+.ai-config-preview {
+  margin: var(--size-4-3) 0;
+}
+
+.ai-config-preview pre {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  padding: var(--size-4-2) var(--size-4-3);
+  overflow-x: auto;
+  font-size: 0.85em;
+  white-space: pre-wrap;
+}
+
+.ai-config-preview h4 {
+  margin: var(--size-4-3) 0 var(--size-4-1);
+  font-size: 0.95em;
+  color: var(--text-muted);
+}
+
+.ai-prompt-input {
+  width: 100%;
+  font-family: var(--font-monospace);
+  font-size: 0.88em;
+  resize: vertical;
+}
+
+.ai-warning {
+  padding: var(--size-4-2);
+  border-left: 3px solid var(--color-orange);
+  background: var(--background-secondary);
+  color: var(--text-muted);
+  font-size: 0.92em;
+}
+
+.ai-safety-list {
+  margin: var(--size-4-2) 0;
+  padding-left: 1.4em;
+  color: var(--text-muted);
+  font-size: 0.92em;
+  line-height: 1.7;
+}
+
+.ai-tool-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: var(--size-4-2) 0;
+}
+
+.ai-tool-item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--size-4-2);
+  padding: 3px 0;
+}
+
+.ai-tool-item code {
+  flex: 0 0 150px;
+  font-size: 0.84em;
+  color: var(--interactive-accent);
+}
+
+.ai-tool-item code.is-destructive {
+  color: var(--text-error);
+}
+
+.ai-tool-desc {
+  color: var(--text-muted);
+  font-size: 0.86em;
+  line-height: 1.5;
+}
+
+.ai-confirm-body {
+  max-height: 320px;
+  overflow: auto;
+  background: var(--background-secondary);
+  border-radius: var(--radius-s);
+  padding: var(--size-4-2);
+  font-size: 0.86em;
+}
+
+/* ------------------------------------------------------------- history modal */
+
+.ai-history-modal h3 {
+  margin-top: 0;
+}
+
+.ai-history-search {
+  width: 100%;
+  margin-bottom: var(--size-4-2);
+}
+
+.ai-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+.ai-history-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--size-4-2);
+  padding: var(--size-4-2);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  cursor: pointer;
+}
+
+.ai-history-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.ai-history-item.is-current {
+  border-color: var(--interactive-accent);
+}
+
+.ai-history-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ai-history-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ai-history-title {
+  font-weight: 600;
+  color: var(--text-normal);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-history-badge {
+  flex: 0 0 auto;
+  padding: 0 5px;
+  border-radius: 3px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  font-size: 0.72em;
+}
+
+.ai-history-meta {
+  margin-top: 2px;
+  font-size: 0.78em;
+  color: var(--text-faint);
+}
+
+.ai-history-preview {
+  margin-top: 2px;
+  font-size: 0.85em;
+  color: var(--text-muted);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.ai-history-actions {
+  display: flex;
+  align-items: flex-start;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.ai-history-item:hover .ai-history-actions {
+  opacity: 1;
+}
+
+.ai-history-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--size-4-3);
+}
+
+.ai-history-empty {
+  padding: var(--size-4-4);
+  text-align: center;
+  color: var(--text-muted);
+}

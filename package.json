@@ -1,0 +1,27 @@
+{
+  "name": "ai-connected",
+  "version": "1.0.0",
+  "description": "Obsidian plugin: expose the vault to AI agents via MCP and chat with a built-in vault-aware agent.",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "build:fast": "node esbuild.config.mjs production",
+    "typecheck": "tsc -noEmit -skipLibCheck",
+    "test": "npm run test:load && npm run test:mcp && npm run test:agent && npm run test:store",
+    "test:load": "node test/load.test.cjs",
+    "test:store": "esbuild test/chatStore.test.ts --bundle --platform=node --format=cjs --alias:obsidian=./test/obsidianStub.ts --outfile=test/build/chatStore.test.cjs --log-level=warning && node test/build/chatStore.test.cjs",
+    "test:mcp": "esbuild test/mcp.test.ts --bundle --platform=node --format=cjs --alias:obsidian=./test/obsidianStub.ts --outfile=test/build/mcp.test.cjs --log-level=warning && node test/build/mcp.test.cjs",
+    "test:agent": "esbuild test/agent.test.ts --bundle --platform=node --format=cjs --alias:obsidian=./test/obsidianStub.ts --outfile=test/build/agent.test.cjs --log-level=warning && node test/build/agent.test.cjs"
+  },
+  "keywords": ["obsidian", "mcp", "ai", "agent", "llm"],
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "builtin-modules": "^4.0.0",
+    "esbuild": "^0.24.2",
+    "obsidian": "^1.14.4",
+    "tslib": "^2.8.1",
+    "typescript": "^5.7.3"
+  }
+}
