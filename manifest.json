@@ -1,10 +1,10 @@
 {
   "id": "ai-connected",
   "name": "AI Connected",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "minAppVersion": "1.4.0",
   "description": "Connect AI agents (Claude Code, Cursor, Cline, ...) to your vault through MCP, plus a built-in vault-aware agent chat panel.",
   "author": "ArctiCat14",
   "authorUrl": "https://github.com/ArctiCat14",
-  "isDesktopOnly": false
+  "isDesktopOnly": true
 }

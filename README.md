@@ -20,7 +20,7 @@ AI Connected 是一个 Obsidian 插件，提供两条互补的接入路径：
 - **内置 Agent**：OpenAI 兼容接口（DeepSeek / OpenAI / Kimi / 通义 / GLM / OpenRouter / Ollama / LM Studio…），支持流式输出与多轮工具调用。
 - **对话不丢**：历史自动保存到插件目录，重载 Obsidian、关闭面板后自动恢复；支持历史列表（搜索、切换、删除）和一键导出成笔记。
 - **安全默认值**：只监听本机、强制令牌、只读开关、破坏性操作二次确认、路径穿越防护、删除进回收站。
-- **桌面 + 移动**：对话面板在移动端也可用；MCP 服务器仅桌面端（需要 Node 运行时）。
+- **仅桌面端**：插件依赖 Node 运行时提供 MCP 服务，manifest 标记 `isDesktopOnly: true`，移动端不会加载。
 
 ---
 
@@ -259,7 +259,7 @@ npm run build        # 产出 main.js
 部分接口不允许浏览器/Electron 直连（CORS）。插件会自动回退到 Obsidian 的 `requestUrl`（非流式），功能不受影响。
 
 **移动端能用吗？**
-对话面板可以；MCP 服务器需要 Node 运行时，移动端不提供，设置页会给出提示。
+不能。插件的 MCP 服务器依赖 Node 的 `http` 模块，manifest 已标记 `isDesktopOnly: true`，Obsidian 移动端不会加载它。想在手机上查看/编辑同一个库，用 Obsidian Sync 之类的同步方案，MCP 仍然在桌面端运行。
 
 **对话记录存在哪？会不会写进我的笔记？**
 只在 `.obsidian/plugins/ai-connected/chats.json`，不会出现在笔记库里。删除这个文件等于清空历史；也可以在设置里关闭保存。
