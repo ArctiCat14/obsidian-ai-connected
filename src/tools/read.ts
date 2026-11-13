@@ -65,10 +65,10 @@ export const readTools = [
           "^" +
             pattern
               .replace(/[.+^${}()|[\]\\]/g, "\\$&")
-              .replace(/\*\*/g, "\u0000")
+              .replace(/\*\*/g, "\uE000")
               .replace(/\*/g, "[^/]*")
               .replace(/\?/g, "[^/]")
-              .replace(/\u0000/g, ".*") +
+              .replace(/\uE000/g, ".*") +
             "$",
           "i",
         );
@@ -268,7 +268,8 @@ export const readTools = [
         file = await app.vault.create(path, "");
         created = true;
       }
-      const target = file as TFile;
+      if (!(file instanceof TFile)) throw new Error(`无法创建日记：${path}`);
+      const target = file;
       const appendText = typeof args.append === "string" ? args.append : "";
       if (appendText.trim()) {
         const existing = await app.vault.read(target);

@@ -10,11 +10,11 @@ import {
   trashFile,
 } from "./helpers";
 
-function normalizeTargetPath(raw: unknown): string {
+function normalizeTargetPath(raw: unknown, configDir = ""): string {
   let path = normalizeUserPath(raw);
   if (!path) throw new Error("path 不能为空");
   if (!/\.[a-z0-9]{1,8}$/i.test(path)) path = `${path}.md`;
-  assertWritablePath(path);
+  assertWritablePath(path, configDir);
   return path;
 }
 
@@ -38,7 +38,7 @@ export const writeTools = [
     },
     async run(args: Record<string, any>, ctx: ToolContext): Promise<ToolResult> {
       const { app } = ctx;
-      const path = normalizeTargetPath(args.path);
+      const path = normalizeTargetPath(args.path, app.vault.configDir);
       const content = typeof args.content === "string" ? args.content : "";
       const overwrite = args.overwrite !== false;
 
@@ -86,7 +86,7 @@ export const writeTools = [
 
       if (!file) {
         if (args.createIfMissing === false) throw new Error(`找不到笔记：${String(args.path)}`);
-        const path = normalizeTargetPath(args.path);
+        const path = normalizeTargetPath(args.path, app.vault.configDir);
         await ensureParentFolder(app, path);
         await app.vault.create(path, addition);
         return json({ path, created: true, appendedChars: addition.length });
@@ -209,7 +209,7 @@ export const writeTools = [
     async run(args: Record<string, any>, ctx: ToolContext): Promise<ToolResult> {
       const { app } = ctx;
       const file = requireNote(app, args.from ?? args.path);
-      const target = normalizeTargetPath(args.to);
+      const target = normalizeTargetPath(args.to, app.vault.configDir);
       if (file.path === target) return json({ path: target, moved: false, message: "源路径与目标路径相同" });
       const existing = app.vault.getAbstractFileByPath(target);
       if (existing) throw new Error(`目标已存在：${target}`);
@@ -223,14 +223,13 @@ export const writeTools = [
     name: "delete_note",
     title: "Delete note",
     description:
-      "Move a note to the Obsidian trash (recoverable) or permanently delete it with permanent=true. Always confirm with the user before deleting.",
+      "Move a note to the Obsidian trash. Deletion always respects the user's file deletion preference in Obsidian; always confirm with the user before deleting.",
     readOnly: false,
     destructive: true,
     inputSchema: {
       type: "object" as const,
       properties: {
         path: { type: "string", description: "Vault-relative path or unique note name." },
-        permanent: { type: "boolean", description: "Delete permanently instead of moving to trash. Default false." },
       },
       required: ["path"],
       additionalProperties: false,
@@ -239,12 +238,8 @@ export const writeTools = [
       const { app } = ctx;
       const file = requireNote(app, args.path);
       const path = file.path;
-      if (args.permanent === true) {
-        await app.vault.delete(file);
-        return ok(`已永久删除：${path}`);
-      }
       await trashFile(app, file);
-      return ok(`已移入回收站（可在 Obsidian 中恢复）：${path}`);
+      return ok(`已删除（遵循 Obsidian 的删除偏好，默认进入回收站）：${path}`);
     },
   },
 ];

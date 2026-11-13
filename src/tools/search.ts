@@ -64,10 +64,10 @@ export async function searchVault(
       "^" +
         opts.glob
           .replace(/[.+^${}()|[\]\\]/g, "\\$&")
-          .replace(/\*\*/g, "\u0000")
+          .replace(/\*\*/g, "\uE000")
           .replace(/\*/g, "[^/]*")
           .replace(/\?/g, "[^/]")
-          .replace(/\u0000/g, ".*") +
+          .replace(/\uE000/g, ".*") +
         "$",
       "i",
     );

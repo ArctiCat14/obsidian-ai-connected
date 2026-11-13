@@ -495,7 +495,7 @@
 }
 
 .is-hidden {
-  display: none !important;
+  display: none;
 }
 
 /* ----------------------------------------------------------------- statusbar */
@@ -636,6 +636,22 @@
   border-radius: var(--radius-s);
   padding: var(--size-4-2);
   font-size: 0.86em;
+}
+
+/* ---------------------------------------------------------------- utilities */
+
+.ai-clipboard-helper {
+  position: fixed;
+  top: -1000px;
+  left: -1000px;
+  opacity: 0;
+}
+
+.ai-preview-label {
+  margin: var(--size-4-3) 0 var(--size-4-1);
+  font-size: 0.95em;
+  font-weight: 600;
+  color: var(--text-muted);
 }
 
 /* ------------------------------------------------------------- history modal */

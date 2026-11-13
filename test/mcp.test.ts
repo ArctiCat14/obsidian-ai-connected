@@ -12,6 +12,9 @@ import { ALL_TOOLS } from "../src/tools";
 import { TFile, TFolder } from "obsidian";
 import { DEFAULT_SETTINGS } from "../src/settings";
 
+// The plugin uses window.* for popout-window compatibility; plain Node has no window.
+(globalThis as any).window = globalThis;
+
 let failures = 0;
 let checks = 0;
 
@@ -86,6 +89,7 @@ const metadataCache = {
 
 const vault = {
   getName: () => "TestVault",
+  configDir: ".obsidian",
   adapter: { getBasePath: () => "C:\\fake\\vault" },
   getMarkdownFiles: () => Array.from(files.values()).sort((a, b) => a.path.localeCompare(b.path)),
   getAllLoadedFiles: () => [...Array.from(folders.values()), ...Array.from(files.values())],

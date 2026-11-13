@@ -574,8 +574,8 @@ export class AgentView extends ItemView {
 
   private autoResize(): void {
     if (!this.inputEl) return;
-    this.inputEl.style.height = "auto";
-    this.inputEl.style.height = `${Math.min(220, this.inputEl.scrollHeight)}px`;
+    this.inputEl.setCssProps({ height: "auto" });
+    this.inputEl.setCssProps({ height: `${Math.min(220, this.inputEl.scrollHeight)}px` });
   }
 
   private openSettings(): void {

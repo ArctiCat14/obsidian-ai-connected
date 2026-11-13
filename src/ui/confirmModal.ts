@@ -24,7 +24,7 @@ export class ConfirmModal extends Modal {
   onOpen(): void {
     const { contentEl } = this;
     contentEl.empty();
-    contentEl.createEl("h3", { text: this.heading });
+    this.titleEl.setText(this.heading);
     const pre = contentEl.createEl("pre", { cls: "ai-confirm-body" });
     pre.setText(this.bodyText);
 

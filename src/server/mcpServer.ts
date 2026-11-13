@@ -66,7 +66,7 @@ export class McpServer {
   private sockets = new Set<import("net").Socket>();
   private sessions = new Map<string, SessionInfo>();
   private sseStreams = new Map<string, ServerResponse>();
-  private timers = new Set<ReturnType<typeof setInterval>>();
+  private timers = new Set<number>();
   private listeningPort = 0;
   private options: McpServerOptions;
 
@@ -133,7 +133,7 @@ export class McpServer {
   }
 
   async stop(): Promise<void> {
-    for (const timer of this.timers) clearInterval(timer);
+    for (const timer of this.timers) window.clearInterval(timer);
     this.timers.clear();
 
     for (const [, res] of this.sseStreams) {
@@ -162,7 +162,7 @@ export class McpServer {
       }
       this.sockets.clear();
       // Safety net: never hang the unload path.
-      setTimeout(resolve, 1500);
+      window.setTimeout(resolve, 1500);
     });
   }
 
@@ -322,17 +322,17 @@ export class McpServer {
     this.sseStreams.set(id, res);
     this.sessions.set(id, { id, createdAt: Date.now(), protocolVersion: "2024-11-05" });
 
-    const timer = setInterval(() => {
+    const timer = window.setInterval(() => {
       try {
         res.write(`: ping ${Date.now()}\n\n`);
       } catch {
-        clearInterval(timer);
+        window.clearInterval(timer);
       }
     }, 25000);
     this.timers.add(timer);
 
     const cleanup = () => {
-      clearInterval(timer);
+      window.clearInterval(timer);
       this.timers.delete(timer);
       this.sseStreams.delete(id);
       this.sessions.delete(id);
@@ -372,7 +372,7 @@ export class McpServer {
 
   // ------------------------------------------------------------- json-rpc core
 
-  private async dispatch(message: JsonRpcRequest, sessionId: string): Promise<unknown | null> {
+  private async dispatch(message: JsonRpcRequest, sessionId: string): Promise<Record<string, unknown> | null> {
     if (!message || typeof message !== "object" || typeof message.method !== "string") {
       const id = message && typeof message === "object" ? message.id ?? null : null;
       return errorBody(id, -32600, "Invalid Request");
@@ -639,7 +639,7 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 function randomId(): string {
-  const c = (globalThis as any).crypto;
+  const c: Crypto | undefined = typeof window === "undefined" ? undefined : window.crypto;
   if (c && typeof c.randomUUID === "function") return c.randomUUID();
   const bytes = new Uint8Array(16);
   if (c && typeof c.getRandomValues === "function") c.getRandomValues(bytes);

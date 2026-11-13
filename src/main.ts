@@ -59,7 +59,7 @@ export default class AIConnectedPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: "copy-mcp-command",
+      id: "copy-claude-code-setup",
       name: "复制 Claude Code 接入命令",
       callback: () => void this.copyClaudeCodeCommand(),
     });
@@ -116,7 +116,6 @@ export default class AIConnectedPlugin extends Plugin {
   onunload(): void {
     void this.chats?.save();
     void this.stopServer();
-    this.app.workspace.detachLeavesOfType(VIEW_TYPE_AGENT);
   }
 
   // ------------------------------------------------------------------- settings
@@ -208,7 +207,6 @@ export default class AIConnectedPlugin extends Plugin {
     const dir = this.manifest.dir ?? `${this.app.vault.configDir}/plugins/${this.manifest.id}`;
     return `${dir}/chats.json`;
   }
-
   get chatHistoryPath(): string {
     return this.chats?.path ?? this.chatStorePath();
   }
@@ -401,12 +399,10 @@ export default class AIConnectedPlugin extends Plugin {
       await navigator.clipboard.writeText(text);
       return;
     } catch {
-      /* fall back below */
+      /* fall through to a hidden textarea */
     }
-    const textarea = document.createElement("textarea");
+    const textarea = createEl("textarea", { cls: "ai-clipboard-helper" });
     textarea.value = text;
-    textarea.style.position = "fixed";
-    textarea.style.opacity = "0";
     document.body.appendChild(textarea);
     textarea.select();
     try {

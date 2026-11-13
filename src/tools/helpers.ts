@@ -1,8 +1,5 @@
 import { App, TAbstractFile, TFile, TFolder, normalizePath } from "obsidian";
 
-/** Characters/patterns that we never allow tools to touch. */
-const FORBIDDEN_PREFIXES = [".obsidian", ".trash", ".git", ".npm-cache"];
-
 export function toPosix(p: string): string {
   return p.replace(/\\/g, "/").replace(/\/{2,}/g, "/");
 }
@@ -36,9 +33,15 @@ export function stripMarkdownExt(p: string): string {
   return p.replace(/\.md$/i, "");
 }
 
-export function assertWritablePath(path: string): void {
+/** Directories tools must never touch. The config dir is added at call time (it is user configurable). */
+const FORBIDDEN_PREFIXES = [".trash", ".git", ".npm-cache"];
+
+export function assertWritablePath(path: string, configDir = ""): void {
   const lower = path.toLowerCase();
-  for (const prefix of FORBIDDEN_PREFIXES) {
+  const prefixes = [...FORBIDDEN_PREFIXES];
+  const config = configDir.replace(/^\/+|\/+$/g, "").trim().toLowerCase();
+  if (config) prefixes.push(config);
+  for (const prefix of prefixes) {
     if (lower === prefix || lower.startsWith(prefix + "/")) {
       throw new Error(`路径 "${path}" 位于受保护的目录（${prefix}），插件拒绝写入`);
     }

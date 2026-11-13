@@ -22,7 +22,7 @@ export class HistoryModal extends Modal {
     const { contentEl } = this;
     contentEl.empty();
     contentEl.addClass("ai-history-modal");
-    contentEl.createEl("h3", { text: "对话历史" });
+    this.titleEl.setText("对话历史");
 
     const search = contentEl.createEl("input", {
       cls: "ai-history-search",

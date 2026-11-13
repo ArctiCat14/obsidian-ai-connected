@@ -1,5 +1,38 @@
 # AI Connected
 
+**AI Connected** connects AI agents to an Obsidian vault.
+
+It runs a local [Model Context Protocol](https://modelcontextprotocol.io) server on `127.0.0.1`,
+exposing the vault to clients such as Claude Code, Cursor, Cline and Windsurf, and it also ships
+an in-app agent panel that can read, search and edit notes through tool calling.
+
+### Features
+
+- Standard MCP server: Streamable HTTP (`/mcp`) plus legacy HTTP+SSE (`/sse`), Bearer-token auth, read-only mode.
+- 15 vault tools: list, read, search, tags, metadata, backlinks, daily notes, create, append, patch, move, delete.
+- Notes are exposed as MCP resources (`obsidian://vault/<path>`), and three prompts are included.
+- Built-in agent panel: any OpenAI-compatible API, streaming output, multi-step tool calling.
+- Chat history is persisted in the plugin folder, with a searchable history list and one-click export to a note.
+- Desktop only (`isDesktopOnly: true`): the MCP server needs Node's `http` module.
+
+### Install
+
+Copy `main.js`, `manifest.json` and `styles.css` from the latest release into
+`<vault>/.obsidian/plugins/ai-connected/`, then enable the plugin in Obsidian.
+Alternatively install it with [BRAT](https://github.com/TfTHacker/obsidian42-brat) using
+`ArctiCat14/obsidian-ai-connected`.
+
+### Security
+
+The MCP server binds to `127.0.0.1` and requires a token generated on first run. Writes can be
+disabled entirely, deletes go through Obsidian's trash, and paths containing `..` or pointing at
+the Obsidian configuration folder are rejected. There is no telemetry; the only outbound request
+is to the LLM endpoint you configure.
+
+---
+
+## 中文
+
 把 Obsidian 笔记库变成 **AI Agent 可直接读写的工作区**。
 
 AI Connected 是一个 Obsidian 插件，提供两条互补的接入路径：
@@ -168,7 +201,7 @@ curl -X POST http://127.0.0.1:37821/mcp \
 | `append_note` | 写 | 在笔记末尾追加内容 |
 | `patch_note` | 写 | 精确替换文本 / 在标题下插入 / 替换整节 |
 | `move_note` | 写 ⚠️ | 移动或重命名（Obsidian 会自动更新链接） |
-| `delete_note` | 写 ⚠️ | 删除（默认进回收站，`permanent=true` 才真正删除） |
+| `delete_note` | 写 ⚠️ | 删除（遵循 Obsidian 的删除偏好，默认进回收站） |
 
 ⚠️ 标记的工具带 `destructiveHint` 注解；客户端一般会据此提示用户确认。
 

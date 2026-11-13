@@ -18,7 +18,7 @@ export class AIConnectedSettingTab extends PluginSettingTab {
     containerEl.empty();
     containerEl.addClass("ai-settings");
 
-    containerEl.createEl("h2", { text: "AI Connected" });
+    new Setting(containerEl).setName("AI Connected").setHeading();
     containerEl.createEl("p", {
       cls: "ai-settings-intro",
       text: "把笔记库变成 AI Agent 可读写的工作区：内置 MCP 服务器供 Claude Code / Cursor / Cline 等客户端接入，同时提供一个能直接操作笔记的对话面板。",
@@ -35,7 +35,7 @@ export class AIConnectedSettingTab extends PluginSettingTab {
 
   private renderMcpSection(containerEl: HTMLElement): void {
     const settings = this.plugin.settings;
-    containerEl.createEl("h3", { text: "MCP 服务器" });
+    new Setting(containerEl).setName("MCP 服务器").setHeading();
 
     if (!Platform.isDesktopApp) {
       containerEl.createEl("p", {
@@ -95,9 +95,11 @@ export class AIConnectedSettingTab extends PluginSettingTab {
             settings.mcpPort = Math.round(port);
             await this.plugin.saveSettings();
           });
-        text.inputEl.addEventListener("blur", async () => {
-          if (this.plugin.settings.mcpEnabled) await this.plugin.restartServer();
-          this.display();
+        text.inputEl.addEventListener("blur", () => {
+          void (async () => {
+            if (this.plugin.settings.mcpEnabled) await this.plugin.restartServer();
+            this.display();
+          })();
         });
       });
 
@@ -170,10 +172,10 @@ export class AIConnectedSettingTab extends PluginSettingTab {
         );
 
       const preview = containerEl.createDiv({ cls: "ai-config-preview" });
-      preview.createEl("h4", { text: "客户端配置（Claude Desktop / Cursor / Cline 等）" });
+      preview.createDiv({ cls: "ai-preview-label", text: "客户端配置（Claude Desktop / Cursor / Cline 等）" });
       const pre = preview.createEl("pre");
       pre.createEl("code", { text: this.plugin.mcpConfigJson() });
-      preview.createEl("h4", { text: "Claude Code CLI" });
+      preview.createDiv({ cls: "ai-preview-label", text: "Claude Code CLI" });
       const cmd = preview.createEl("pre");
       cmd.createEl("code", { text: this.plugin.claudeCodeCommand() });
     }
@@ -183,7 +185,7 @@ export class AIConnectedSettingTab extends PluginSettingTab {
 
   private renderAgentSection(containerEl: HTMLElement): void {
     const settings = this.plugin.settings;
-    containerEl.createEl("h3", { text: "内置 Agent" });
+    new Setting(containerEl).setName("内置 Agent").setHeading();
     containerEl.createEl("p", {
       cls: "ai-settings-intro",
       text: "支持任意 OpenAI 兼容接口。API Key 保存在本机插件数据文件（data.json）中，不会上传到其他地方。",
@@ -274,7 +276,6 @@ export class AIConnectedSettingTab extends PluginSettingTab {
         slider
           .setLimits(0, 1.5, 0.1)
           .setValue(settings.temperature)
-          .setDynamicTooltip()
           .onChange(async (value) => {
             settings.temperature = value;
             await this.plugin.saveSettings();
@@ -288,7 +289,6 @@ export class AIConnectedSettingTab extends PluginSettingTab {
         slider
           .setLimits(1, 20, 1)
           .setValue(settings.maxSteps)
-          .setDynamicTooltip()
           .onChange(async (value) => {
             settings.maxSteps = Math.round(value);
             await this.plugin.saveSettings();
@@ -332,7 +332,7 @@ export class AIConnectedSettingTab extends PluginSettingTab {
 
   private renderChatSection(containerEl: HTMLElement): void {
     const settings = this.plugin.settings;
-    containerEl.createEl("h3", { text: "对话记录" });
+    new Setting(containerEl).setName("对话记录").setHeading();
 
     new Setting(containerEl)
       .setName("保存对话历史")
@@ -370,7 +370,7 @@ export class AIConnectedSettingTab extends PluginSettingTab {
       .addButton((button) =>
         button
           .setButtonText("清空全部")
-          .setWarning()
+          .setDestructive()
           .onClick(async () => {
             const confirmed = await ConfirmModal.ask(
               this.app,
@@ -391,7 +391,7 @@ export class AIConnectedSettingTab extends PluginSettingTab {
 
   private renderSafetySection(containerEl: HTMLElement): void {
     const settings = this.plugin.settings;
-    containerEl.createEl("h3", { text: "安全" });
+    new Setting(containerEl).setName("安全").setHeading();
 
     new Setting(containerEl)
       .setName("执行破坏性操作前确认")
@@ -405,7 +405,7 @@ export class AIConnectedSettingTab extends PluginSettingTab {
 
     const notes = containerEl.createEl("ul", { cls: "ai-safety-list" });
     notes.createEl("li", { text: "MCP 服务器默认只监听 127.0.0.1，并强制 Bearer 令牌校验。" });
-    notes.createEl("li", { text: "工具无法访问 .obsidian / .trash / .git 等目录，路径中的 .. 会被拒绝。" });
+    notes.createEl("li", { text: "工具无法访问 Obsidian 配置目录、回收站、.git 等位置，路径中的 .. 会被拒绝。" });
     notes.createEl("li", { text: "删除操作默认移入 Obsidian 回收站，可在文件管理器中恢复。" });
     notes.createEl("li", { text: "请只接入你信任的 AI 客户端，它们能读取你笔记库中的全部内容。" });
   }
@@ -413,7 +413,7 @@ export class AIConnectedSettingTab extends PluginSettingTab {
   // --------------------------------------------------------------------- tools
 
   private renderToolsSection(containerEl: HTMLElement): void {
-    containerEl.createEl("h3", { text: `可用工具（${ALL_TOOLS.length}）` });
+    new Setting(containerEl).setName(`可用工具（${ALL_TOOLS.length}）`).setHeading();
     const list = containerEl.createDiv({ cls: "ai-tool-list" });
     for (const tool of ALL_TOOLS) {
       const item = list.createDiv({ cls: "ai-tool-item" });
@@ -423,7 +423,7 @@ export class AIConnectedSettingTab extends PluginSettingTab {
       item.createSpan({ cls: "ai-tool-desc", text: tool.description });
     }
 
-    containerEl.createEl("h3", { text: "外部客户端接入示例" });
+    new Setting(containerEl).setName("外部客户端接入示例").setHeading();
     const example = containerEl.createEl("pre", { cls: "ai-config-preview" });
     example.setText(
       [

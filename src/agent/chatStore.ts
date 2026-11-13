@@ -30,7 +30,7 @@ export function deriveTitle(text: string, fallback = "新对话"): string {
   const cleaned = text
     .replace(/【[^】]*】/g, " ")
     .replace(/<[^>]+>/g, " ")
-    .replace(/[#>*_`~\[\]]/g, " ")
+    .replace(/[#>*_`~[\]]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
   if (!cleaned) return fallback;
@@ -278,18 +278,18 @@ export class ChatStore {
 }
 
 function randomId(): string {
-  const cryptoApi = (globalThis as any).crypto;
+  const cryptoApi: Crypto | undefined = typeof window === "undefined" ? undefined : window.crypto;
   if (cryptoApi && typeof cryptoApi.randomUUID === "function") return cryptoApi.randomUUID();
   return `chat-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 /** setTimeout that works in Obsidian (window) and in plain Node (tests). */
 function scheduleTimer(callback: () => void, ms: number): number {
-  return setTimeout(callback, ms) as unknown as number;
+  return window.setTimeout(callback, ms);
 }
 
 function cancelTimer(id: number): void {
-  clearTimeout(id as any);
+  window.clearTimeout(id);
 }
 
 // --------------------------------------------------------------------- export
@@ -357,7 +357,7 @@ export function formatTime(ms: number): string {
 
 export function sanitizeFileName(name: string): string {
   const cleaned = name
-    .replace(/[\\/:*?"<>|#^\[\]]/g, "-")
+    .replace(/[\\/:*?"<>|#^[\]]/g, "-")
     .replace(/-{2,}/g, "-")
     .replace(/\s+/g, " ")
     .replace(/^[.\s-]+|[.\s-]+$/g, "")

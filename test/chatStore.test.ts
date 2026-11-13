@@ -14,6 +14,9 @@ import {
   sessionToMarkdown,
 } from "../src/agent/chatStore";
 
+// The plugin uses window.* for popout-window compatibility; plain Node has no window.
+(globalThis as any).window = globalThis;
+
 let failures = 0;
 let checks = 0;
 function check(name: string, condition: boolean, detail?: unknown): void {

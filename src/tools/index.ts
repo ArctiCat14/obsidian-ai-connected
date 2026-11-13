@@ -5,7 +5,7 @@ import { writeTools } from "./write";
 
 export * from "./types";
 
-export const ALL_TOOLS: ToolDef[] = [...readTools, ...searchTools, ...writeTools] as unknown as ToolDef[];
+export const ALL_TOOLS: ToolDef[] = [...readTools, ...searchTools, ...writeTools];
 
 export function findTool(name: string): ToolDef | undefined {
   return ALL_TOOLS.find((t) => t.name === name);
