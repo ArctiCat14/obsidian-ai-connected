@@ -1,6 +1,6 @@
 {
   "name": "ai-connected",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Obsidian plugin: expose the vault to AI agents via MCP and chat with a built-in vault-aware agent.",
   "main": "main.js",
   "scripts": {

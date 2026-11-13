@@ -18,7 +18,6 @@ export class AIConnectedSettingTab extends PluginSettingTab {
     containerEl.empty();
     containerEl.addClass("ai-settings");
 
-    new Setting(containerEl).setName("AI Connected").setHeading();
     containerEl.createEl("p", {
       cls: "ai-settings-intro",
       text: "把笔记库变成 AI Agent 可读写的工作区：内置 MCP 服务器供 Claude Code / Cursor / Cline 等客户端接入，同时提供一个能直接操作笔记的对话面板。",
