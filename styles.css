@@ -952,3 +952,21 @@ body.is-mobile .ai-suggestion {
 body.is-mobile .ai-tool-output {
   max-height: 220px;
 }
+
+/* ------------------------------------------------------- passphrase modal */
+
+.ai-passphrase-hint {
+  margin: 0 0 var(--size-4-2);
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.ai-passphrase-input {
+  width: 100%;
+  margin-bottom: var(--size-4-2);
+}
+
+.ai-passphrase-warning {
+  margin: var(--size-4-2) 0 0;
+  font-size: 0.85em;
+}

@@ -556,6 +556,8 @@ export class AgentView extends ItemView {
   private async runTurn(): Promise<void> {
     const chat = this.chat;
     if (!chat) return;
+    // Ask for the passphrase before doing anything (the key may be encrypted).
+    if (!(await this.plugin.ensureLlmReady())) return;
     this.setBusy(true);
     this.abort = new AbortController();
     this.streamBody = null;

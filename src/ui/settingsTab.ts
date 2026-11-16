@@ -2,8 +2,10 @@ import { App, Notice, Platform, PluginSettingTab, Setting } from "obsidian";
 import type AIConnectedPlugin from "../main";
 import { testConnection } from "../agent/llm";
 import { generateToken, PROVIDER_PRESETS } from "../settings";
+import { isCryptoAvailable } from "../security/keyVault";
 import { ALL_TOOLS } from "../tools";
 import { ConfirmModal } from "./confirmModal";
+import { PassphraseModal } from "./passphraseModal";
 
 export class AIConnectedSettingTab extends PluginSettingTab {
   private plugin: AIConnectedPlugin;
@@ -225,17 +227,24 @@ export class AIConnectedSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("API Key")
-      .setDesc("本地模型（Ollama / LM Studio）可以留空。")
+      .setDesc(
+        this.plugin.apiKeyEncrypted
+          ? "已加密存储。解锁后才能调用模型；如需更换请先「清除密钥」。"
+          : "本地模型（Ollama / LM Studio）可以留空。",
+      )
       .addText((text) => {
         text.inputEl.type = "password";
         text
-          .setPlaceholder("sk-...")
+          .setPlaceholder(this.plugin.apiKeyEncrypted ? "（已加密）" : "sk-...")
           .setValue(settings.apiKey)
+          .setDisabled(this.plugin.apiKeyEncrypted)
           .onChange(async (value) => {
             settings.apiKey = value.trim();
             await this.plugin.saveSettings();
           });
       });
+
+    this.renderApiKeySecurity(containerEl);
 
     new Setting(containerEl)
       .setName("模型")
@@ -255,6 +264,7 @@ export class AIConnectedSettingTab extends PluginSettingTab {
       .setDesc("发送一个最小请求，验证 Base URL、Key 与模型是否可用。")
       .addButton((button) =>
         button.setButtonText("测试").onClick(async () => {
+          if (!(await this.plugin.ensureLlmReady())) return;
           button.setDisabled(true);
           button.setButtonText("测试中…");
           try {
@@ -326,6 +336,97 @@ export class AIConnectedSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
         });
       });
+  }
+
+  // -------------------------------------------------------------- api key vault
+
+  private renderApiKeySecurity(containerEl: HTMLElement): void {
+    const encrypted = this.plugin.apiKeyEncrypted;
+    const unlocked = this.plugin.apiKeyUnlocked;
+    const hasKey = !!this.plugin.settings.apiKey;
+
+    const setting = new Setting(containerEl).setName("API Key 存储");
+
+    if (!isCryptoAvailable()) {
+      setting.setDesc("当前环境不支持 WebCrypto，无法加密存储，Key 只能明文保存在 data.json。");
+      return;
+    }
+
+    if (encrypted) {
+      setting.setDesc(
+        unlocked
+          ? "已加密，且本次会话已解锁。密文在 data.json，口令不保存。"
+          : "已加密存储：data.json 里只有密文，口令不会写入磁盘。",
+      );
+      setting
+        .addButton((button) =>
+          button
+            .setButtonText(unlocked ? "已解锁" : "解锁")
+            .setDisabled(unlocked)
+            .onClick(async () => {
+              const key = await this.plugin.ensureApiKey();
+              if (key) this.notice("已解锁 API Key");
+              this.display();
+            }),
+        )
+        .addButton((button) =>
+          button.setButtonText("取消加密").onClick(async () => {
+            if (await this.plugin.decryptApiKeyToPlain()) this.display();
+          }),
+        )
+        .addButton((button) =>
+          button
+            .setButtonText("清除密钥")
+            .setDestructive()
+            .onClick(async () => {
+              const ok = await ConfirmModal.ask(
+                this.app,
+                "清除 API Key？",
+                "明文和密文都会被删除，之后需要重新填写。",
+              );
+              if (!ok) return;
+              await this.plugin.clearApiKey();
+              this.notice("API Key 已清除");
+              this.display();
+            }),
+        );
+      return;
+    }
+
+    setting.setDesc(
+      hasKey
+        ? "当前是明文存储（data.json）。建议加密：库被同步、备份或上传到 Git 时，密文不可读。"
+        : "尚未设置 API Key，填写后才能加密。",
+    );
+    setting
+      .addButton((button) =>
+        button
+          .setButtonText("加密存储")
+          .setCta()
+          .setDisabled(!hasKey)
+          .onClick(async () => {
+            const passphrase = await PassphraseModal.ask(
+              this.app,
+              "create",
+              "设置用于加密 API Key 的口令。它不会保存到任何地方，忘记后只能重新填写 Key。",
+            );
+            if (!passphrase) return;
+            if (await this.plugin.encryptApiKey(passphrase)) this.display();
+          }),
+      )
+      .addButton((button) =>
+        button
+          .setButtonText("清除密钥")
+          .setDestructive()
+          .setDisabled(!hasKey)
+          .onClick(async () => {
+            const ok = await ConfirmModal.ask(this.app, "清除 API Key？", "删除后需要重新填写。");
+            if (!ok) return;
+            await this.plugin.clearApiKey();
+            this.notice("API Key 已清除");
+            this.display();
+          }),
+      );
   }
 
   // ------------------------------------------------------------- chat history

@@ -7,8 +7,11 @@ import {
   AIConnectedSettings,
   DEFAULT_SETTINGS,
   generateToken,
+  isLocalUrl,
   normalizeSettings,
 } from "./settings";
+import { decryptSecret, encryptSecret } from "./security/keyVault";
+import { PassphraseModal } from "./ui/passphraseModal";
 import { ALL_TOOLS } from "./tools";
 import { ensureFolder } from "./tools/helpers";
 import type { ToolContext, ToolDef } from "./tools/types";
@@ -21,6 +24,8 @@ export default class AIConnectedPlugin extends Plugin {
   private mcp: McpServer | null = null;
   private statusBar: HTMLElement | null = null;
   private serverError = "";
+  /** Decrypted API key for this session only; never written to disk. */
+  private apiKeyRuntime: string | null = null;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -118,6 +123,7 @@ export default class AIConnectedPlugin extends Plugin {
   }
 
   onunload(): void {
+    this.apiKeyRuntime = null;
     void this.chats?.save();
     void this.stopServer();
   }
@@ -144,11 +150,101 @@ export default class AIConnectedPlugin extends Plugin {
   llmConfig(): LlmConfig {
     return {
       baseUrl: this.settings.baseUrl,
-      apiKey: this.settings.apiKey,
+      apiKey: this.apiKeyRuntime ?? this.settings.apiKey,
       model: this.settings.model,
       temperature: this.settings.temperature,
       stream: this.settings.stream,
     };
+  }
+
+  // ------------------------------------------------------------ api key vault
+
+  get apiKeyEncrypted(): boolean {
+    return !!this.settings.apiKeyEnc;
+  }
+
+  get apiKeyUnlocked(): boolean {
+    return !!this.apiKeyRuntime;
+  }
+
+  /** Returns the API key for this session, prompting for the passphrase if needed. */
+  async ensureApiKey(): Promise<string | null> {
+    if (this.apiKeyRuntime) return this.apiKeyRuntime;
+    if (!this.settings.apiKeyEnc) {
+      this.apiKeyRuntime = this.settings.apiKey || null;
+      return this.apiKeyRuntime;
+    }
+
+    const passphrase = await PassphraseModal.ask(
+      this.app,
+      "unlock",
+      "API Key 已加密存储。输入口令解锁本次会话。",
+    );
+    if (!passphrase) return null;
+
+    try {
+      this.apiKeyRuntime = await decryptSecret(this.settings.apiKeyEnc, passphrase);
+      return this.apiKeyRuntime;
+    } catch {
+      new Notice("口令错误，无法解密 API Key。");
+      return null;
+    }
+  }
+
+  /** Encrypts the current key and wipes the plaintext copy. */
+  async encryptApiKey(passphrase: string): Promise<boolean> {
+    const plaintext = this.apiKeyRuntime || this.settings.apiKey;
+    if (!plaintext) {
+      new Notice("请先填写 API Key，再设置加密。");
+      return false;
+    }
+    try {
+      this.settings.apiKeyEnc = await encryptSecret(plaintext, passphrase);
+      this.settings.apiKey = "";
+      this.apiKeyRuntime = plaintext;
+      await this.saveSettings();
+      new Notice("API Key 已加密存储，口令不会保存。");
+      return true;
+    } catch (error) {
+      new Notice(`加密失败：${error instanceof Error ? error.message : String(error)}`);
+      return false;
+    }
+  }
+
+  /** Reverts to plaintext storage (requires the passphrase). */
+  async decryptApiKeyToPlain(): Promise<boolean> {
+    const encrypted = this.settings.apiKeyEnc;
+    if (!encrypted) return false;
+    const passphrase = await PassphraseModal.ask(this.app, "unlock", "输入口令以取消加密。Key 将恢复为明文存储。");
+    if (!passphrase) return false;
+    try {
+      const plaintext = await decryptSecret(encrypted, passphrase);
+      this.settings.apiKey = plaintext;
+      this.settings.apiKeyEnc = null;
+      this.apiKeyRuntime = plaintext;
+      await this.saveSettings();
+      new Notice("已取消加密：API Key 现在以明文保存在 data.json 中。");
+      return true;
+    } catch {
+      new Notice("口令错误，未做修改。");
+      return false;
+    }
+  }
+
+  async clearApiKey(): Promise<void> {
+    this.settings.apiKey = "";
+    this.settings.apiKeyEnc = null;
+    this.apiKeyRuntime = null;
+    await this.saveSettings();
+  }
+
+  /** Gate for anything that talks to the model. */
+  async ensureLlmReady(): Promise<boolean> {
+    const key = await this.ensureApiKey();
+    if (key) return true;
+    if (isLocalUrl(this.settings.baseUrl)) return true;
+    new Notice("还没有可用的 API Key：请在设置中填写，或解锁已加密的 Key。");
+    return false;
   }
 
   toolContext(): ToolContext {

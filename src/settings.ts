@@ -1,3 +1,5 @@
+import { isEncryptedSecret, type EncryptedSecret } from "./security/keyVault";
+
 export interface AIConnectedSettings {
   // ---- MCP server ----
   mcpEnabled: boolean;
@@ -11,6 +13,8 @@ export interface AIConnectedSettings {
   provider: string;
   baseUrl: string;
   apiKey: string;
+  /** AES-GCM-encrypted API key; when set, `apiKey` is empty and the passphrase is required. */
+  apiKeyEnc: EncryptedSecret | null;
   model: string;
   temperature: number;
   maxSteps: number;
@@ -60,6 +64,7 @@ export const DEFAULT_SETTINGS: AIConnectedSettings = {
   provider: "deepseek",
   baseUrl: PROVIDER_PRESETS.deepseek.baseUrl,
   apiKey: "",
+  apiKeyEnc: null,
   model: PROVIDER_PRESETS.deepseek.model,
   temperature: 0.3,
   maxSteps: 8,
@@ -99,6 +104,11 @@ export function normalizeSettings(raw: Partial<AIConnectedSettings> | null | und
       ? merged.chatExportFolder.trim().replace(/^\/+|\/+$/g, "")
       : DEFAULT_SETTINGS.chatExportFolder;
   merged.mcpEnabled = merged.mcpEnabled !== false;
+  if (isEncryptedSecret(merged.apiKeyEnc)) {
+    merged.apiKey = "";
+  } else {
+    merged.apiKeyEnc = null;
+  }
   if (typeof merged.systemPrompt !== "string" || !merged.systemPrompt.trim()) {
     merged.systemPrompt = DEFAULT_SYSTEM_PROMPT;
   }
