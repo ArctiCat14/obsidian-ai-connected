@@ -40,29 +40,31 @@ export default class AIConnectedPlugin extends Plugin {
       callback: () => void this.activateAgentView(),
     });
 
-    this.addCommand({
-      id: "toggle-mcp-server",
-      name: "启动 / 停止 MCP 服务器",
-      callback: () => void this.toggleServer(),
-    });
+    if (Platform.isDesktopApp) {
+      this.addCommand({
+        id: "toggle-mcp-server",
+        name: "启动 / 停止 MCP 服务器",
+        callback: () => void this.toggleServer(),
+      });
 
-    this.addCommand({
-      id: "restart-mcp-server",
-      name: "重启 MCP 服务器",
-      callback: () => void this.restartServer(true),
-    });
+      this.addCommand({
+        id: "restart-mcp-server",
+        name: "重启 MCP 服务器",
+        callback: () => void this.restartServer(true),
+      });
 
-    this.addCommand({
-      id: "copy-mcp-config",
-      name: "复制 MCP 客户端配置（JSON）",
-      callback: () => void this.copyMcpConfig(),
-    });
+      this.addCommand({
+        id: "copy-mcp-config",
+        name: "复制 MCP 客户端配置（JSON）",
+        callback: () => void this.copyMcpConfig(),
+      });
 
-    this.addCommand({
-      id: "copy-claude-code-setup",
-      name: "复制 Claude Code 接入命令",
-      callback: () => void this.copyClaudeCodeCommand(),
-    });
+      this.addCommand({
+        id: "copy-claude-code-setup",
+        name: "复制 Claude Code 接入命令",
+        callback: () => void this.copyClaudeCodeCommand(),
+      });
+    }
 
     this.addCommand({
       id: "new-chat",
@@ -103,12 +105,14 @@ export default class AIConnectedPlugin extends Plugin {
 
     this.addSettingTab(new AIConnectedSettingTab(this.app, this));
 
-    this.statusBar = this.addStatusBarItem();
-    this.statusBar.addClass("ai-status-bar");
-    this.statusBar.addEventListener("click", () => void this.toggleServer());
-    this.updateStatusBar();
+    if (Platform.isDesktopApp) {
+      this.statusBar = this.addStatusBarItem();
+      this.statusBar.addClass("ai-status-bar");
+      this.statusBar.addEventListener("click", () => void this.toggleServer());
+      this.updateStatusBar();
+    }
 
-    if (this.settings.mcpEnabled) {
+    if (Platform.isDesktopApp && this.settings.mcpEnabled) {
       void this.startServer();
     }
   }

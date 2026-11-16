@@ -1,4 +1,4 @@
-import { Component, ItemView, MarkdownRenderer, Notice, WorkspaceLeaf, setIcon } from "obsidian";
+import { Component, ItemView, MarkdownRenderer, Notice, Platform, WorkspaceLeaf, setIcon } from "obsidian";
 import type AIConnectedPlugin from "../main";
 import type { AgentEvent } from "./agentLoop";
 import { runAgent } from "./agentLoop";
@@ -38,6 +38,7 @@ export class AgentView extends ItemView {
   private historyOpen = false;
   private historyQuery = "";
   private sidebarWidth = 200;
+  private readonly isMobile = Platform.isMobile;
 
   private markdownComponent: Component;
   private busy = false;
@@ -172,6 +173,7 @@ export class AgentView extends ItemView {
       attr: { role: "separator", "aria-orientation": "vertical", title: "拖动调整宽度，双击复位" },
     });
     this.installResizer(this.historyResizer);
+    if (this.isMobile) this.historyResizer.addClass("is-hidden");
     const chatCol = layout.createDiv({ cls: "ai-chat-col" });
 
     const header = chatCol.createDiv({ cls: "ai-header" });
@@ -197,13 +199,16 @@ export class AgentView extends ItemView {
     this.inputEl = inputRow.createEl("textarea", {
       cls: "ai-input",
       attr: {
-        placeholder: "问问你的笔记库…… （Enter 发送，Shift+Enter 换行）",
+        placeholder: this.isMobile
+          ? "输入消息…（点「发送」提交，换行直接回车）"
+          : "问问你的笔记库…… （Enter 发送，Shift+Enter 换行）",
         rows: "3",
         "aria-label": "发给 AI Agent 的消息",
       },
     });
     this.inputEl.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+      // On touch keyboards Enter should insert a newline; sending stays on the button.
+      if (event.key === "Enter" && !event.shiftKey && !event.isComposing && !this.isMobile) {
         event.preventDefault();
         void this.send();
       }
@@ -229,6 +234,10 @@ export class AgentView extends ItemView {
   }
 
   private applySidebarWidth(width: number, persist = false): void {
+    if (this.isMobile) {
+      this.historyPane?.setCssProps({ width: "100%" });
+      return;
+    }
     const clamped = Math.max(150, Math.min(480, Math.round(Number.isFinite(width) ? width : 200)));
     this.sidebarWidth = clamped;
     this.historyPane?.setCssProps({ width: `${clamped}px` });
@@ -299,6 +308,14 @@ export class AgentView extends ItemView {
     setIcon(newButton, "plus");
     newButton.addEventListener("click", () => this.newChat());
 
+    // Only visible on mobile, where the pane covers the chat header.
+    const closeButton = header.createEl("button", {
+      cls: "ai-history-close ai-icon-btn",
+      attr: { "aria-label": "关闭对话列表", title: "关闭" },
+    });
+    setIcon(closeButton, "x");
+    closeButton.addEventListener("click", () => this.setHistoryOpen(false));
+
     this.historyListEl = pane.createDiv({ cls: "ai-history-list" });
   }
 
@@ -309,7 +326,8 @@ export class AgentView extends ItemView {
   private setHistoryOpen(open: boolean, persist = true): void {
     this.historyOpen = open;
     this.historyPane?.toggleClass("is-hidden", !open);
-    this.historyResizer?.toggleClass("is-hidden", !open);
+    this.historyPane?.toggleClass("is-overlay", open && this.isMobile);
+    this.historyResizer?.toggleClass("is-hidden", !open || this.isMobile);
     if (open) this.renderHistoryList();
     if (persist) {
       this.plugin.settings.chatSidebarOpen = open;
@@ -368,6 +386,7 @@ export class AgentView extends ItemView {
 
     item.addEventListener("click", () => {
       this.loadSession(session.id);
+      if (this.isMobile) this.setHistoryOpen(false);
     });
   }
 
@@ -748,7 +767,8 @@ export class AgentView extends ItemView {
   private autoResize(): void {
     if (!this.inputEl) return;
     this.inputEl.setCssProps({ height: "auto" });
-    this.inputEl.setCssProps({ height: `${Math.min(220, this.inputEl.scrollHeight)}px` });
+    const max = this.isMobile ? 150 : 220;
+    this.inputEl.setCssProps({ height: `${Math.min(max, this.inputEl.scrollHeight)}px` });
   }
 
   private openSettings(): void {

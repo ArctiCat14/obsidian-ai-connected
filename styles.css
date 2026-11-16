@@ -657,6 +657,7 @@
 /* --------------------------------------------------------- history sidebar */
 
 .ai-layout {
+  position: relative;
   display: flex;
   flex: 1 1 auto;
   min-height: 0;
@@ -706,6 +707,39 @@ body.ai-resizing .ai-history-resizer::after {
 body.ai-resizing {
   cursor: col-resize;
   user-select: none;
+}
+
+/* ------------------------------------------------------------------ mobile */
+
+.ai-history-pane.is-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  width: 100%;
+  border-right: none;
+  background: var(--background-primary);
+}
+
+body.is-mobile .ai-history-resizer {
+  display: none;
+}
+
+body.is-mobile .ai-history-actions {
+  opacity: 1;
+}
+
+body.is-mobile .ai-history-item {
+  padding: 10px;
+}
+
+body.is-mobile .ai-icon-btn {
+  width: 34px;
+  height: 34px;
+}
+
+body.is-mobile .ai-input {
+  /* 16px avoids the iOS focus zoom. */
+  font-size: 16px;
 }
 
 .ai-chat-col {
@@ -867,4 +901,54 @@ body.ai-resizing {
   text-align: center;
   font-size: 0.75em;
   color: var(--text-faint);
+}
+
+/* --------------------------------------------------------- mobile polish */
+
+.ai-history-close {
+  display: none;
+  flex: 0 0 auto;
+}
+
+body.is-mobile .ai-history-close {
+  display: inline-flex;
+}
+
+body.is-mobile .ai-header {
+  padding: 8px 12px;
+}
+
+body.is-mobile .ai-messages {
+  padding: 12px 10px;
+  gap: 10px;
+  -webkit-overflow-scrolling: touch;
+}
+
+body.is-mobile .ai-composer {
+  padding: 8px 10px calc(10px + env(safe-area-inset-bottom));
+}
+
+body.is-mobile .ai-msg-assistant .ai-bubble {
+  max-width: 94%;
+}
+
+body.is-mobile .ai-tool {
+  margin-left: 0;
+}
+
+body.is-mobile .ai-markdown table {
+  display: block;
+  overflow-x: auto;
+}
+
+body.is-mobile .ai-markdown pre {
+  font-size: 0.85em;
+}
+
+body.is-mobile .ai-suggestion {
+  flex: 1 1 45%;
+}
+
+body.is-mobile .ai-tool-output {
+  max-height: 220px;
 }

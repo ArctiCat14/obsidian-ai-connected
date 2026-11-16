@@ -13,7 +13,8 @@ an in-app agent panel that can read, search and edit notes through tool calling.
 - Notes are exposed as MCP resources (`obsidian://vault/<path>`), and three prompts are included.
 - Built-in agent panel: any OpenAI-compatible API, streaming output, multi-step tool calling.
 - Chat history is persisted in the plugin folder, with a searchable history list and one-click export to a note.
-- Desktop only (`isDesktopOnly: true`): the MCP server needs Node's `http` module.
+- Desktop and mobile: chat, history and export work on phones; the MCP server is desktop-only
+  because it needs Node's `http` module, and is disabled automatically on mobile.
 
 ### Install
 
@@ -53,7 +54,7 @@ AI Connected 是一个 Obsidian 插件，提供两条互补的接入路径：
 - **内置 Agent**：OpenAI 兼容接口（DeepSeek / OpenAI / Kimi / 通义 / GLM / OpenRouter / Ollama / LM Studio…），支持流式输出与多轮工具调用。
 - **对话不丢**：历史自动保存到插件目录，重载 Obsidian、关闭面板后自动恢复；面板内可展开会话列表，按今天/昨天/最近 7 天分组，可搜索、切换、删除，并支持一键导出成笔记。
 - **安全默认值**：只监听本机、强制令牌、只读开关、破坏性操作二次确认、路径穿越防护、删除进回收站。
-- **仅桌面端**：插件依赖 Node 运行时提供 MCP 服务，manifest 标记 `isDesktopOnly: true`，移动端不会加载。
+- **桌面 + 移动**：对话、历史、导出在手机端同样可用（回车换行、会话列表全屏、按钮加大、安全区适配）；MCP 服务器仅桌面端（需要 Node 运行时），移动端自动禁用并在设置里隐藏。
 
 ---
 
@@ -292,7 +293,7 @@ npm run build        # 产出 main.js
 部分接口不允许浏览器/Electron 直连（CORS）。插件会自动回退到 Obsidian 的 `requestUrl`（非流式），功能不受影响。
 
 **移动端能用吗？**
-不能。插件的 MCP 服务器依赖 Node 的 `http` 模块，manifest 已标记 `isDesktopOnly: true`，Obsidian 移动端不会加载它。想在手机上查看/编辑同一个库，用 Obsidian Sync 之类的同步方案，MCP 仍然在桌面端运行。
+可以。对话面板、历史列表、导出笔记、附件都在手机上可用；回车是换行，发送要用按钮。MCP 服务器依赖 Node 的 `http` 模块，只在桌面端运行，移动端会自动跳过，设置页也只显示一条说明。
 
 **对话记录存在哪？会不会写进我的笔记？**
 只在 `.obsidian/plugins/ai-connected/chats.json`，不会出现在笔记库里。删除这个文件等于清空历史；也可以在设置里关闭保存。

@@ -39,8 +39,9 @@ export class AIConnectedSettingTab extends PluginSettingTab {
     if (!Platform.isDesktopApp) {
       containerEl.createEl("p", {
         cls: "ai-warning",
-        text: "移动端没有 Node 运行时，MCP 服务器只在桌面版 Obsidian 中可用。对话面板仍然可以使用。",
+        text: "移动端没有 Node 运行时，MCP 服务器只在桌面版 Obsidian 中可用。对话面板、历史记录和导出功能照常使用。",
       });
+      return;
     }
 
     const status = containerEl.createDiv({ cls: "ai-server-status" });
@@ -422,20 +423,22 @@ export class AIConnectedSettingTab extends PluginSettingTab {
       item.createSpan({ cls: "ai-tool-desc", text: tool.description });
     }
 
-    new Setting(containerEl).setName("外部客户端接入示例").setHeading();
-    const example = containerEl.createEl("pre", { cls: "ai-config-preview" });
-    example.setText(
-      [
-        "# Claude Code",
-        this.plugin.claudeCodeCommand(),
-        "",
-        "# 其他客户端（Cursor / Cline / Claude Desktop / Windsurf）",
-        "# 添加一个 Streamable HTTP MCP 服务器，URL 与 Authorization 见上方配置。",
-        "",
-        "# 健康检查",
-        `curl http://${this.plugin.settings.mcpHost}:${this.plugin.settings.mcpPort}/health`,
-      ].join("\n"),
-    );
+    if (Platform.isDesktopApp) {
+      new Setting(containerEl).setName("外部客户端接入示例").setHeading();
+      const example = containerEl.createEl("pre", { cls: "ai-config-preview" });
+      example.setText(
+        [
+          "# Claude Code",
+          this.plugin.claudeCodeCommand(),
+          "",
+          "# 其他客户端（Cursor / Cline / Claude Desktop / Windsurf）",
+          "# 添加一个 Streamable HTTP MCP 服务器，URL 与 Authorization 见上方配置。",
+          "",
+          "# 健康检查",
+          `curl http://${this.plugin.settings.mcpHost}:${this.plugin.settings.mcpPort}/health`,
+        ].join("\n"),
+      );
+    }
   }
 
   private notice(message: string, timeout = 3000): void {
