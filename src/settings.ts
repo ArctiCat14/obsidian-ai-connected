@@ -19,6 +19,7 @@ export interface AIConnectedSettings {
   autoAttachActiveNote: boolean;
   persistChatHistory: boolean;
   chatExportFolder: string;
+  chatSidebarOpen: boolean;
 
   // ---- Safety ----
   confirmDestructive: boolean;
@@ -66,6 +67,7 @@ export const DEFAULT_SETTINGS: AIConnectedSettings = {
   autoAttachActiveNote: false,
   persistChatHistory: true,
   chatExportFolder: "AI 对话",
+  chatSidebarOpen: false,
 
   confirmDestructive: true,
 };
@@ -88,6 +90,7 @@ export function normalizeSettings(raw: Partial<AIConnectedSettings> | null | und
   merged.confirmDestructive = merged.confirmDestructive !== false;
   merged.autoAttachActiveNote = merged.autoAttachActiveNote === true;
   merged.persistChatHistory = merged.persistChatHistory !== false;
+  merged.chatSidebarOpen = merged.chatSidebarOpen === true;
   merged.chatExportFolder =
     typeof merged.chatExportFolder === "string"
       ? merged.chatExportFolder.trim().replace(/^\/+|\/+$/g, "")

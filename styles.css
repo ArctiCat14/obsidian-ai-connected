@@ -656,12 +656,31 @@
 
 /* --------------------------------------------------------- history sidebar */
 
-.ai-history-view {
+.ai-layout {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.ai-history-pane {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  padding: 0;
-  overflow: hidden;
+  flex: 0 0 200px;
+  min-height: 0;
+  border-right: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+}
+
+.ai-history-pane.is-hidden {
+  display: none;
+}
+
+.ai-chat-col {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
 }
 
 .ai-history-header {

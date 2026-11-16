@@ -2,8 +2,9 @@ import { Component, ItemView, MarkdownRenderer, Notice, WorkspaceLeaf, setIcon }
 import type AIConnectedPlugin from "../main";
 import type { AgentEvent } from "./agentLoop";
 import { runAgent } from "./agentLoop";
-import { deriveTitle, type ChatSession } from "./chatStore";
+import { deriveTitle, formatTime, groupSessionsByDate, type ChatSession } from "./chatStore";
 import { isAbortError, type LlmMessage } from "./llm";
+import { ConfirmModal } from "../ui/confirmModal";
 
 export const VIEW_TYPE_AGENT = "ai-connected-agent";
 
@@ -30,6 +31,11 @@ export class AgentView extends ItemView {
   private statusEl!: HTMLElement;
   private sendButton!: HTMLButtonElement;
   private stopButton!: HTMLButtonElement;
+
+  private historyPane: HTMLElement | null = null;
+  private historyListEl: HTMLElement | null = null;
+  private historyOpen = false;
+  private historyQuery = "";
 
   private markdownComponent: Component;
   private busy = false;
@@ -114,7 +120,7 @@ export class AgentView extends ItemView {
     this.plugin.chats.create();
     this.chat = this.plugin.chats.active;
     this.renderSession();
-    this.plugin.refreshHistoryViews();
+    this.renderHistoryList();
     this.inputEl?.focus();
   }
 
@@ -129,11 +135,11 @@ export class AgentView extends ItemView {
     this.plugin.chats.setActive(id);
     this.chat = session;
     this.renderSession();
-    this.plugin.refreshHistoryViews();
+    this.renderHistoryList();
   }
 
   openHistory(): void {
-    void this.plugin.activateHistoryView();
+    this.setHistoryOpen(true);
   }
 
   async exportChat(): Promise<void> {
@@ -156,7 +162,12 @@ export class AgentView extends ItemView {
     root.empty();
     root.addClass("ai-connected-view");
 
-    const header = root.createDiv({ cls: "ai-header" });
+    const layout = root.createDiv({ cls: "ai-layout" });
+    this.historyPane = layout.createDiv({ cls: "ai-history-pane" });
+    this.buildHistoryPane(this.historyPane);
+    const chatCol = layout.createDiv({ cls: "ai-chat-col" });
+
+    const header = chatCol.createDiv({ cls: "ai-header" });
     const title = header.createDiv({ cls: "ai-title" });
     const iconEl = title.createSpan({ cls: "ai-title-icon" });
     setIcon(iconEl, "bot");
@@ -164,14 +175,14 @@ export class AgentView extends ItemView {
 
     const actions = header.createDiv({ cls: "ai-header-actions" });
     this.iconButton(actions, "plus", "新对话", () => this.newChat());
-    this.iconButton(actions, "history", "打开对话列表侧边栏", () => this.openHistory());
+    this.iconButton(actions, "history", "打开 / 关闭对话列表", () => this.toggleHistory());
     this.iconButton(actions, "download", "导出为笔记", () => void this.exportChat());
     this.iconButton(actions, "clipboard-list", "把当前笔记作为附件", () => void this.addActiveNoteAttachment());
     this.iconButton(actions, "settings", "插件设置", () => this.openSettings());
 
-    this.messagesEl = root.createDiv({ cls: "ai-messages" });
+    this.messagesEl = chatCol.createDiv({ cls: "ai-messages" });
 
-    const composer = root.createDiv({ cls: "ai-composer" });
+    const composer = chatCol.createDiv({ cls: "ai-composer" });
     this.attachmentsEl = composer.createDiv({ cls: "ai-attachments" });
     this.renderAttachments();
 
@@ -205,6 +216,7 @@ export class AgentView extends ItemView {
     this.stopButton.addEventListener("click", () => this.stop());
 
     this.statusEl = composer.createDiv({ cls: "ai-status" });
+    this.setHistoryOpen(this.plugin.settings.chatSidebarOpen === true, false);
     this.updateStatus();
   }
 
@@ -213,6 +225,114 @@ export class AgentView extends ItemView {
     setIcon(button, icon);
     button.addEventListener("click", onClick);
     return button;
+  }
+
+  // ------------------------------------------------------------ history pane
+
+  private buildHistoryPane(pane: HTMLElement): void {
+    const header = pane.createDiv({ cls: "ai-history-header" });
+    const search = header.createEl("input", {
+      cls: "ai-history-search",
+      attr: { type: "search", placeholder: "搜索对话…", "aria-label": "搜索对话" },
+    });
+    search.addEventListener("input", () => {
+      this.historyQuery = search.value.trim().toLowerCase();
+      this.renderHistoryList();
+    });
+
+    const newButton = header.createEl("button", {
+      cls: "ai-history-new",
+      attr: { "aria-label": "新建对话", title: "新建对话" },
+    });
+    setIcon(newButton, "plus");
+    newButton.addEventListener("click", () => this.newChat());
+
+    this.historyListEl = pane.createDiv({ cls: "ai-history-list" });
+  }
+
+  toggleHistory(): void {
+    this.setHistoryOpen(!this.historyOpen);
+  }
+
+  private setHistoryOpen(open: boolean, persist = true): void {
+    this.historyOpen = open;
+    this.historyPane?.toggleClass("is-hidden", !open);
+    if (open) this.renderHistoryList();
+    if (persist) {
+      this.plugin.settings.chatSidebarOpen = open;
+      void this.plugin.saveSettings();
+    }
+  }
+
+  /** Called by the plugin after conversations change. */
+  refreshHistoryList(): void {
+    if (this.historyOpen) this.renderHistoryList();
+  }
+
+  private renderHistoryList(): void {
+    const list = this.historyListEl;
+    if (!list) return;
+    list.empty();
+
+    const sessions = this.plugin.chats.sessions.filter((session) => this.matchesHistory(session));
+    if (!sessions.length) {
+      list.createDiv({
+        cls: "ai-history-empty",
+        text: this.plugin.chats.sessions.length ? "没有匹配的对话" : "还没有对话\n点上方 + 开始",
+      });
+      return;
+    }
+
+    for (const group of groupSessionsByDate(sessions)) {
+      const groupEl = list.createDiv({ cls: "ai-history-group" });
+      groupEl.createDiv({ cls: "ai-history-group-title", text: group.label });
+      for (const session of group.sessions) this.renderHistoryItem(groupEl, session);
+    }
+  }
+
+  private renderHistoryItem(parent: HTMLElement, session: ChatSession): void {
+    const item = parent.createDiv({ cls: "ai-history-item" });
+    if (session.id === this.chat?.id) item.addClass("is-current");
+
+    const main = item.createDiv({ cls: "ai-history-main" });
+    const titleRow = main.createDiv({ cls: "ai-history-title-row" });
+    titleRow.createSpan({ cls: "ai-history-title", text: session.title || "新对话" });
+    if (session.id === this.chat?.id) {
+      titleRow.createSpan({ cls: "ai-history-badge", text: "当前" });
+    }
+    main.createDiv({ cls: "ai-history-meta", text: `${formatTime(session.updatedAt)} · ${session.messages.length} 条` });
+
+    const actions = item.createDiv({ cls: "ai-history-actions" });
+    const deleteButton = actions.createEl("button", {
+      cls: "ai-icon-btn",
+      attr: { "aria-label": "删除这段对话", title: "删除" },
+    });
+    setIcon(deleteButton, "trash-2");
+    deleteButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      void this.deleteSession(session);
+    });
+
+    item.addEventListener("click", () => {
+      this.loadSession(session.id);
+    });
+  }
+
+  private async deleteSession(session: ChatSession): Promise<void> {
+    const ok = await ConfirmModal.ask(
+      this.app,
+      "删除这段对话？",
+      `「${session.title || "新对话"}」将从历史记录中移除，无法恢复。`,
+    );
+    if (!ok) return;
+    await this.plugin.deleteChatSession(session.id);
+    this.renderHistoryList();
+  }
+
+  private matchesHistory(session: ChatSession): boolean {
+    if (!this.historyQuery) return true;
+    if (session.title.toLowerCase().includes(this.historyQuery)) return true;
+    return session.messages.some((message) => message.content.toLowerCase().includes(this.historyQuery));
   }
 
   private renderWelcome(): void {
@@ -235,6 +355,7 @@ export class AgentView extends ItemView {
     const store = this.plugin.chats;
     this.chat = store.active ?? store.create();
     this.renderSession();
+    this.refreshHistoryList();
   }
 
   private renderSession(): void {
@@ -281,7 +402,7 @@ export class AgentView extends ItemView {
   private persist(): void {
     if (!this.chat) return;
     this.plugin.chats.update(this.chat);
-    this.plugin.refreshHistoryViews();
+    this.refreshHistoryList();
   }
 
   // ------------------------------------------------------------------ attachments
