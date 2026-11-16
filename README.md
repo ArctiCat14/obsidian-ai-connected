@@ -51,7 +51,7 @@ AI Connected 是一个 Obsidian 插件，提供两条互补的接入路径：
 - **结构化资源**：每篇笔记同时作为 MCP Resource 暴露（`obsidian://vault/<path>`），支持 `resources/read`。
 - **提示模板**：`summarize_note`、`summarize_active_note`、`find_related_notes`，在支持 Prompts 的客户端里可直接调用。
 - **内置 Agent**：OpenAI 兼容接口（DeepSeek / OpenAI / Kimi / 通义 / GLM / OpenRouter / Ollama / LM Studio…），支持流式输出与多轮工具调用。
-- **对话不丢**：历史自动保存到插件目录，重载 Obsidian、关闭面板后自动恢复；支持历史列表（搜索、切换、删除）和一键导出成笔记。
+- **对话不丢**：历史自动保存到插件目录，重载 Obsidian、关闭面板后自动恢复；左侧常驻会话列表按今天/昨天/最近 7 天分组，可搜索、切换、删除，并支持一键导出成笔记。
 - **安全默认值**：只监听本机、强制令牌、只读开关、破坏性操作二次确认、路径穿越防护、删除进回收站。
 - **仅桌面端**：插件依赖 Node 运行时提供 MCP 服务，manifest 标记 `isDesktopOnly: true`，移动端不会加载。
 
@@ -112,7 +112,8 @@ npm run dev
 
 - 存储位置：`.obsidian/plugins/ai-connected/chats.json`（只存插件目录，不写进笔记库正文）
 - 保留策略：最多 40 段对话、每段 300 条消息；工具输出落盘时截断到 4000 字符，避免文件膨胀
-- 面板右上角 **历史** 按钮：搜索、切换、删除历史对话（`Ctrl+P` → `AI Connected: 打开对话历史`）
+- 左侧 **AI 对话** 侧边栏：按今天 / 昨天 / 最近 7 天 / 更早分组，支持搜索、切换、删除（`Ctrl+P` → `AI Connected: 打开对话历史`，或点功能区 history 图标）
+- 面板右上角 **历史** 按钮：直接打开同一个侧边栏
 - 面板右上角 **导出** 按钮：把当前对话导出成 Markdown 笔记，默认存到 `AI 对话/` 文件夹
 - 设置 → AI Connected → 对话记录：可关闭保存、修改导出文件夹、清空全部历史
 
@@ -241,11 +242,11 @@ src/
 ├── agent/
 │   ├── llm.ts              OpenAI 兼容客户端（流式 SSE、requestUrl 回退）
 │   ├── agentLoop.ts        多轮工具调用循环
-│   ├── chatStore.ts        对话历史持久化、截断、导出 Markdown
-│   └── agentView.ts        Obsidian 侧边栏对话面板
+│   ├── chatStore.ts        对话历史持久化、分组、截断、导出 Markdown
+│   ├── agentView.ts        Obsidian 侧边栏对话面板
+│   └── historyView.ts      左侧会话列表（搜索 / 分组 / 切换 / 删除）
 └── ui/
     ├── settingsTab.ts      设置界面
-    ├── historyModal.ts     历史对话列表（搜索 / 切换 / 删除）
     └── confirmModal.ts     破坏性操作确认框
 ```
 
@@ -276,7 +277,7 @@ npm run build        # 产出 main.js
 - `test/load.test.cjs`：确认打包产物能在缺少 Node API 的环境（模拟移动端）下加载，证明 `require("http")` 是懒加载。
 - `test/mcp.test.ts`：53 项断言，覆盖初始化、鉴权、15 个工具、资源、提示、SSE、只读模式。
 - `test/agent.test.ts`：18 项断言，用本地 mock 的流式接口验证工具调用拼装、结果回填、中止处理。
-- `test/chatStore.test.ts`：36 项断言，覆盖历史存取、截断、残缺工具轮次清理、条数上限、导出格式。
+- `test/chatStore.test.ts`：40 项断言，覆盖历史存取、截断、残缺工具轮次清理、条数上限、日期分组、导出格式。
 
 ---
 

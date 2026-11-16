@@ -4,7 +4,6 @@ import type { AgentEvent } from "./agentLoop";
 import { runAgent } from "./agentLoop";
 import { deriveTitle, type ChatSession } from "./chatStore";
 import { isAbortError, type LlmMessage } from "./llm";
-import { HistoryModal } from "../ui/historyModal";
 
 export const VIEW_TYPE_AGENT = "ai-connected-agent";
 
@@ -78,6 +77,10 @@ export class AgentView extends ItemView {
     this.inputEl?.focus();
   }
 
+  get isBusy(): boolean {
+    return this.busy;
+  }
+
   refreshStatus(): void {
     this.updateStatus();
   }
@@ -111,31 +114,26 @@ export class AgentView extends ItemView {
     this.plugin.chats.create();
     this.chat = this.plugin.chats.active;
     this.renderSession();
+    this.plugin.refreshHistoryViews();
     this.inputEl?.focus();
   }
 
+  /** Switch the panel to another stored conversation. */
+  loadSession(id: string, force = false): void {
+    if (this.busy && !force) {
+      new Notice("请先停止当前生成，再切换对话。");
+      return;
+    }
+    const session = this.plugin.chats.get(id);
+    if (!session) return;
+    this.plugin.chats.setActive(id);
+    this.chat = session;
+    this.renderSession();
+    this.plugin.refreshHistoryViews();
+  }
+
   openHistory(): void {
-    const store = this.plugin.chats;
-    new HistoryModal(
-      this.app,
-      [...store.sessions],
-      this.chat?.id ?? null,
-      (id) => {
-        const session = store.get(id);
-        if (!session) return;
-        store.setActive(id);
-        this.chat = session;
-        this.renderSession();
-      },
-      (id) => {
-        store.remove(id);
-        if (this.chat?.id === id) {
-          this.chat = store.active ?? store.create();
-          this.renderSession();
-        }
-      },
-      () => this.newChat(),
-    ).open();
+    void this.plugin.activateHistoryView();
   }
 
   async exportChat(): Promise<void> {
@@ -166,7 +164,7 @@ export class AgentView extends ItemView {
 
     const actions = header.createDiv({ cls: "ai-header-actions" });
     this.iconButton(actions, "plus", "新对话", () => this.newChat());
-    this.iconButton(actions, "history", "历史对话", () => this.openHistory());
+    this.iconButton(actions, "history", "打开对话列表侧边栏", () => this.openHistory());
     this.iconButton(actions, "download", "导出为笔记", () => void this.exportChat());
     this.iconButton(actions, "clipboard-list", "把当前笔记作为附件", () => void this.addActiveNoteAttachment());
     this.iconButton(actions, "settings", "插件设置", () => this.openSettings());
@@ -283,6 +281,7 @@ export class AgentView extends ItemView {
   private persist(): void {
     if (!this.chat) return;
     this.plugin.chats.update(this.chat);
+    this.plugin.refreshHistoryViews();
   }
 
   // ------------------------------------------------------------------ attachments

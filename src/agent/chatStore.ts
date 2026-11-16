@@ -355,6 +355,37 @@ export function formatTime(ms: number): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+export interface SessionGroup {
+  label: string;
+  sessions: ChatSession[];
+}
+
+/** Buckets sessions into 今天 / 昨天 / 最近 7 天 / 更早, newest first. */
+export function groupSessionsByDate(sessions: ChatSession[], now = Date.now()): SessionGroup[] {
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+  const today = startOfToday.getTime();
+  const day = 24 * 60 * 60 * 1000;
+
+  const buckets: SessionGroup[] = [
+    { label: "今天", sessions: [] },
+    { label: "昨天", sessions: [] },
+    { label: "最近 7 天", sessions: [] },
+    { label: "更早", sessions: [] },
+  ];
+
+  for (const session of sessions) {
+    const time = session.updatedAt;
+    if (time >= today) buckets[0].sessions.push(session);
+    else if (time >= today - day) buckets[1].sessions.push(session);
+    else if (time >= today - 7 * day) buckets[2].sessions.push(session);
+    else buckets[3].sessions.push(session);
+  }
+
+  for (const bucket of buckets) bucket.sessions.sort((a, b) => b.updatedAt - a.updatedAt);
+  return buckets.filter((bucket) => bucket.sessions.length > 0);
+}
+
 export function sanitizeFileName(name: string): string {
   const cleaned = name
     .replace(/[\\/:*?"<>|#^[\]]/g, "-")

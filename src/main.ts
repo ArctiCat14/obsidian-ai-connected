@@ -1,5 +1,6 @@
 import { Notice, Platform, Plugin, WorkspaceLeaf } from "obsidian";
 import { AgentView, VIEW_TYPE_AGENT } from "./agent/agentView";
+import { HistoryView, VIEW_TYPE_HISTORY } from "./agent/historyView";
 import { ChatStore, sanitizeFileName, sessionToMarkdown, type ChatSession } from "./agent/chatStore";
 import type { LlmConfig } from "./agent/llm";
 import { McpServer } from "./server/mcpServer";
@@ -29,9 +30,14 @@ export default class AIConnectedPlugin extends Plugin {
     await this.chats.load();
 
     this.registerView(VIEW_TYPE_AGENT, (leaf) => new AgentView(leaf, this));
+    this.registerView(VIEW_TYPE_HISTORY, (leaf) => new HistoryView(leaf, this));
 
     this.addRibbonIcon("bot", "AI Connected：打开 Agent 面板", () => {
       void this.activateAgentView();
+    });
+
+    this.addRibbonIcon("history", "AI Connected：打开对话列表", () => {
+      void this.activateHistoryView();
     });
 
     this.addCommand({
@@ -233,8 +239,55 @@ export default class AIConnectedPlugin extends Plugin {
   }
 
   async openChatHistory(): Promise<void> {
+    await this.activateHistoryView();
+  }
+
+  async activateHistoryView(): Promise<HistoryView | null> {
+    const { workspace } = this.app;
+    let leaf: WorkspaceLeaf | null = workspace.getLeavesOfType(VIEW_TYPE_HISTORY)[0] ?? null;
+    if (!leaf) {
+      leaf = workspace.getLeftLeaf(false);
+      if (!leaf) {
+        new Notice("无法创建对话列表侧边栏。");
+        return null;
+      }
+      await leaf.setViewState({ type: VIEW_TYPE_HISTORY, active: true });
+    }
+    workspace.revealLeaf(leaf);
+    return leaf.view instanceof HistoryView ? leaf.view : null;
+  }
+
+  /** Called whenever a conversation changes, so the sidebar stays in sync. */
+  refreshHistoryViews(): void {
+    for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_HISTORY)) {
+      if (leaf.view instanceof HistoryView) leaf.view.refresh();
+    }
+  }
+
+  async openSession(id: string): Promise<void> {
+    const session = this.chats.get(id);
+    if (!session) return;
     const view = await this.activateAgentView();
-    view?.openHistory();
+    view?.loadSession(id);
+    this.refreshHistoryViews();
+  }
+
+  async deleteChatSession(id: string): Promise<void> {
+    const view = this.getAgentView();
+    if (view?.isBusy && this.chats.activeId === id) {
+      new Notice("当前对话正在生成，请先停止再删除。");
+      return;
+    }
+
+    const wasActive = this.chats.activeId === id;
+    this.chats.remove(id);
+    await this.chats.save();
+
+    if (wasActive) {
+      const nextId = this.chats.activeId ?? this.chats.create().id;
+      if (view) view.loadSession(nextId, true);
+    }
+    this.refreshHistoryViews();
   }
 
   async exportCurrentChat(): Promise<void> {

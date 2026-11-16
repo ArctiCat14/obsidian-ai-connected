@@ -654,23 +654,78 @@
   color: var(--text-muted);
 }
 
-/* ------------------------------------------------------------- history modal */
+/* --------------------------------------------------------- history sidebar */
 
-.ai-history-modal h3 {
-  margin-top: 0;
+.ai-history-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+}
+
+.ai-history-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: var(--size-4-2);
+  border-bottom: 1px solid var(--background-modifier-border);
 }
 
 .ai-history-search {
-  width: 100%;
-  margin-bottom: var(--size-4-2);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ai-history-new {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-s);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.ai-history-new:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.ai-history-new svg {
+  width: 16px;
+  height: 16px;
 }
 
 .ai-history-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-height: 55vh;
-  overflow-y: auto;
+  padding: var(--size-4-2);
+}
+
+.ai-history-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ai-history-group-title {
+  margin: var(--size-4-2) 0 2px;
+  padding: 0 2px;
+  font-size: 0.72em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-faint);
 }
 
 .ai-history-item {
@@ -678,7 +733,7 @@
   align-items: flex-start;
   gap: var(--size-4-2);
   padding: var(--size-4-2);
-  border: 1px solid var(--background-modifier-border);
+  border: 1px solid transparent;
   border-radius: var(--radius-s);
   cursor: pointer;
 }
@@ -689,6 +744,7 @@
 
 .ai-history-item.is-current {
   border-color: var(--interactive-accent);
+  background: var(--background-secondary);
 }
 
 .ai-history-main {
@@ -746,14 +802,17 @@
   opacity: 1;
 }
 
-.ai-history-footer {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: var(--size-4-3);
+.ai-history-empty {
+  padding: var(--size-4-4) var(--size-4-2);
+  text-align: center;
+  white-space: pre-line;
+  line-height: 1.6;
+  color: var(--text-muted);
 }
 
-.ai-history-empty {
-  padding: var(--size-4-4);
+.ai-history-footer-note {
+  padding: var(--size-4-2);
   text-align: center;
-  color: var(--text-muted);
+  font-size: 0.75em;
+  color: var(--text-faint);
 }

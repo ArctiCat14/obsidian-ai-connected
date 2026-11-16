@@ -7,6 +7,7 @@ import type { LlmMessage } from "../src/agent/llm";
 import {
   ChatStore,
   deriveTitle,
+  groupSessionsByDate,
   MAX_SESSIONS,
   MAX_STORED_TOOL_CHARS,
   sanitizeFileName,
@@ -172,6 +173,30 @@ async function main(): Promise<void> {
   check("renders tool arguments", withTool.includes('"path": "a.md"'), withTool);
   check("renders tool results as callout", withTool.includes("> [!quote]- 工具结果 · read_note"));
   check("trims giant tool output in notes", withTool.length < 20000, withTool.length);
+
+  console.log("\n== date grouping ==");
+  const now = new Date("2026-11-16T12:00:00").getTime();
+  const sessionAt = (id: string, updatedAt: number) => ({
+    id,
+    title: id,
+    createdAt: updatedAt,
+    updatedAt,
+    messages: [{ role: "user" as const, content: id }],
+  });
+  const groups = groupSessionsByDate(
+    [
+      sessionAt("today-older", now - 2 * 60 * 60 * 1000),
+      sessionAt("today-newer", now - 60 * 1000),
+      sessionAt("yesterday", now - 26 * 60 * 60 * 1000),
+      sessionAt("this-week", now - 3 * 24 * 60 * 60 * 1000),
+      sessionAt("old", now - 30 * 24 * 60 * 60 * 1000),
+    ],
+    now,
+  );
+  check("groups into four buckets", groups.map((g) => g.label).join(",") === "今天,昨天,最近 7 天,更早", groups.map((g) => g.label));
+  check("newest first inside a bucket", groups[0].sessions.map((s) => s.id).join(",") === "today-newer,today-older", groups[0].sessions.map((s) => s.id));
+  check("empty buckets are omitted", groupSessionsByDate([sessionAt("only", now)], now).length === 1);
+  check("boundary: yesterday is not today", groupSessionsByDate([sessionAt("y", now - 25 * 60 * 60 * 1000)], now)[0].label === "昨天", groupSessionsByDate([sessionAt("y", now - 25 * 60 * 60 * 1000)], now)[0].label);
 
   console.log("\n== file names ==");
   check("strips illegal characters", sanitizeFileName('a/b:c*d?"e<f>g|h#i^j') === "a-b-c-d-e-f-g-h-i-j", sanitizeFileName('a/b:c*d?"e<f>g|h#i^j'));
