@@ -34,8 +34,10 @@ export class AgentView extends ItemView {
 
   private historyPane: HTMLElement | null = null;
   private historyListEl: HTMLElement | null = null;
+  private historyResizer: HTMLElement | null = null;
   private historyOpen = false;
   private historyQuery = "";
+  private sidebarWidth = 200;
 
   private markdownComponent: Component;
   private busy = false;
@@ -165,6 +167,11 @@ export class AgentView extends ItemView {
     const layout = root.createDiv({ cls: "ai-layout" });
     this.historyPane = layout.createDiv({ cls: "ai-history-pane" });
     this.buildHistoryPane(this.historyPane);
+    this.historyResizer = layout.createDiv({
+      cls: "ai-history-resizer",
+      attr: { role: "separator", "aria-orientation": "vertical", title: "拖动调整宽度，双击复位" },
+    });
+    this.installResizer(this.historyResizer);
     const chatCol = layout.createDiv({ cls: "ai-chat-col" });
 
     const header = chatCol.createDiv({ cls: "ai-header" });
@@ -216,8 +223,53 @@ export class AgentView extends ItemView {
     this.stopButton.addEventListener("click", () => this.stop());
 
     this.statusEl = composer.createDiv({ cls: "ai-status" });
+    this.applySidebarWidth(this.plugin.settings.chatSidebarWidth);
     this.setHistoryOpen(this.plugin.settings.chatSidebarOpen === true, false);
     this.updateStatus();
+  }
+
+  private applySidebarWidth(width: number, persist = false): void {
+    const clamped = Math.max(150, Math.min(480, Math.round(Number.isFinite(width) ? width : 200)));
+    this.sidebarWidth = clamped;
+    this.historyPane?.setCssProps({ width: `${clamped}px` });
+    if (persist) {
+      this.plugin.settings.chatSidebarWidth = clamped;
+      void this.plugin.saveSettings();
+    }
+  }
+
+  private installResizer(resizer: HTMLElement): void {
+    let startX = 0;
+    let startWidth = 0;
+
+    const onMove = (event: PointerEvent) => {
+      this.applySidebarWidth(startWidth + (event.clientX - startX));
+    };
+
+    const stop = (event: PointerEvent) => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", stop);
+      document.body.removeClass("ai-resizing");
+      this.applySidebarWidth(this.sidebarWidth, true);
+      try {
+        resizer.releasePointerCapture(event.pointerId);
+      } catch {
+        /* pointer already released */
+      }
+    };
+
+    resizer.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) return;
+      event.preventDefault();
+      startX = event.clientX;
+      startWidth = this.historyPane?.offsetWidth ?? this.sidebarWidth;
+      document.body.addClass("ai-resizing");
+      resizer.setPointerCapture(event.pointerId);
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", stop);
+    });
+
+    resizer.addEventListener("dblclick", () => this.applySidebarWidth(200, true));
   }
 
   private iconButton(parent: HTMLElement, icon: string, tooltip: string, onClick: () => void): HTMLButtonElement {
@@ -257,6 +309,7 @@ export class AgentView extends ItemView {
   private setHistoryOpen(open: boolean, persist = true): void {
     this.historyOpen = open;
     this.historyPane?.toggleClass("is-hidden", !open);
+    this.historyResizer?.toggleClass("is-hidden", !open);
     if (open) this.renderHistoryList();
     if (persist) {
       this.plugin.settings.chatSidebarOpen = open;

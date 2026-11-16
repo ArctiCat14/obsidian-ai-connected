@@ -665,7 +665,8 @@
 .ai-history-pane {
   display: flex;
   flex-direction: column;
-  flex: 0 0 200px;
+  flex: 0 0 auto;
+  width: 200px;
   min-height: 0;
   border-right: 1px solid var(--background-modifier-border);
   background: var(--background-secondary);
@@ -673,6 +674,38 @@
 
 .ai-history-pane.is-hidden {
   display: none;
+}
+
+.ai-history-resizer {
+  position: relative;
+  flex: 0 0 6px;
+  margin: 0 -3px;
+  z-index: 2;
+  cursor: col-resize;
+}
+
+.ai-history-resizer::after {
+  content: "";
+  position: absolute;
+  inset: 0 2px;
+  border-radius: 2px;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.ai-history-resizer:hover::after,
+body.ai-resizing .ai-history-resizer::after {
+  background: var(--interactive-accent);
+  opacity: 0.45;
+}
+
+.ai-history-resizer.is-hidden {
+  display: none;
+}
+
+body.ai-resizing {
+  cursor: col-resize;
+  user-select: none;
 }
 
 .ai-chat-col {
