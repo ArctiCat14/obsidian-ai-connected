@@ -6,6 +6,7 @@ import { McpServer } from "./server/mcpServer";
 import {
   AIConnectedSettings,
   DEFAULT_SETTINGS,
+  forStorage,
   generateToken,
   isLocalUrl,
   normalizeSettings,
@@ -110,6 +111,10 @@ export default class AIConnectedPlugin extends Plugin {
 
     this.addSettingTab(new AIConnectedSettingTab(this.app, this));
 
+    // Enforce encrypted-only storage for any legacy plaintext key.
+    this.app.workspace.onLayoutReady(() => {
+      void this.ensureKeyEncryptionPolicy();
+    });
     if (Platform.isDesktopApp) {
       this.statusBar = this.addStatusBarItem();
       this.statusBar.addClass("ai-status-bar");
@@ -135,12 +140,13 @@ export default class AIConnectedPlugin extends Plugin {
     this.settings = normalizeSettings(raw);
     if (!this.settings.mcpToken) {
       this.settings.mcpToken = generateToken();
-      await this.saveData(this.settings);
+      await this.saveData(forStorage(this.settings));
     }
   }
 
   async saveSettings(): Promise<void> {
-    await this.saveData(this.settings);
+    // The plaintext key is session-only; never persist it.
+    await this.saveData(forStorage(this.settings));
     this.updateStatusBar();
     this.refreshAgentStatus();
   }
@@ -171,8 +177,12 @@ export default class AIConnectedPlugin extends Plugin {
   async ensureApiKey(): Promise<string | null> {
     if (this.apiKeyRuntime) return this.apiKeyRuntime;
     if (!this.settings.apiKeyEnc) {
-      this.apiKeyRuntime = this.settings.apiKey || null;
-      return this.apiKeyRuntime;
+      const legacy = this.settings.apiKey;
+      if (legacy) {
+        this.apiKeyRuntime = legacy;
+        return legacy;
+      }
+      return null;
     }
 
     const passphrase = await PassphraseModal.ask(
@@ -191,19 +201,19 @@ export default class AIConnectedPlugin extends Plugin {
     }
   }
 
-  /** Encrypts the current key and wipes the plaintext copy. */
-  async encryptApiKey(passphrase: string): Promise<boolean> {
-    const plaintext = this.apiKeyRuntime || this.settings.apiKey;
-    if (!plaintext) {
-      new Notice("请先填写 API Key，再设置加密。");
+  /** Stores the key only in encrypted form. */
+  async saveApiKey(plaintext: string, passphrase: string): Promise<boolean> {
+    const key = plaintext.trim();
+    if (!key) {
+      new Notice("API Key 不能为空。");
       return false;
     }
     try {
-      this.settings.apiKeyEnc = await encryptSecret(plaintext, passphrase);
+      this.settings.apiKeyEnc = await encryptSecret(key, passphrase);
       this.settings.apiKey = "";
-      this.apiKeyRuntime = plaintext;
+      this.apiKeyRuntime = key;
       await this.saveSettings();
-      new Notice("API Key 已加密存储，口令不会保存。");
+      new Notice("API Key 已加密保存，口令不会写入磁盘。");
       return true;
     } catch (error) {
       new Notice(`加密失败：${error instanceof Error ? error.message : String(error)}`);
@@ -211,23 +221,61 @@ export default class AIConnectedPlugin extends Plugin {
     }
   }
 
-  /** Reverts to plaintext storage (requires the passphrase). */
-  async decryptApiKeyToPlain(): Promise<boolean> {
+  /** Re-encrypts the stored key with a new passphrase. */
+  async changeApiKeyPassphrase(): Promise<boolean> {
     const encrypted = this.settings.apiKeyEnc;
     if (!encrypted) return false;
-    const passphrase = await PassphraseModal.ask(this.app, "unlock", "输入口令以取消加密。Key 将恢复为明文存储。");
-    if (!passphrase) return false;
+
+    const current = await PassphraseModal.ask(this.app, "unlock", "输入当前口令。");
+    if (!current) return false;
+
+    let plaintext: string;
     try {
-      const plaintext = await decryptSecret(encrypted, passphrase);
-      this.settings.apiKey = plaintext;
-      this.settings.apiKeyEnc = null;
+      plaintext = await decryptSecret(encrypted, current);
+    } catch {
+      new Notice("当前口令错误。");
+      return false;
+    }
+
+    const next = await PassphraseModal.ask(this.app, "create", "设置新口令（至少 6 位）。");
+    if (!next) return false;
+
+    try {
+      this.settings.apiKeyEnc = await encryptSecret(plaintext, next);
       this.apiKeyRuntime = plaintext;
       await this.saveSettings();
-      new Notice("已取消加密：API Key 现在以明文保存在 data.json 中。");
+      new Notice("口令已更新。");
       return true;
-    } catch {
-      new Notice("口令错误，未做修改。");
+    } catch (error) {
+      new Notice(`更新失败：${error instanceof Error ? error.message : String(error)}`);
       return false;
+    }
+  }
+
+  /**
+   * Runs once the workspace is ready: any legacy plaintext key is encrypted
+   * immediately, or dropped from disk if the user declines to set a passphrase.
+   */
+  async ensureKeyEncryptionPolicy(): Promise<void> {
+    const legacy = this.settings.apiKey;
+    if (!legacy) return;
+
+    const passphrase = await PassphraseModal.ask(
+      this.app,
+      "create",
+      "安全升级：检测到 API Key 以明文保存。请设置口令立即加密（取消则从磁盘删除明文，本次会话仍可使用）。",
+    );
+
+    if (!passphrase) {
+      this.apiKeyRuntime = legacy;
+      this.settings.apiKey = "";
+      await this.saveSettings();
+      new Notice("明文 Key 已从磁盘移除。下次启动需要重新填写并加密。", 8000);
+      return;
+    }
+
+    if (await this.saveApiKey(legacy, passphrase)) {
+      new Notice("已完成安全升级：API Key 现在只以密文保存。");
     }
   }
 
@@ -236,6 +284,11 @@ export default class AIConnectedPlugin extends Plugin {
     this.settings.apiKeyEnc = null;
     this.apiKeyRuntime = null;
     await this.saveSettings();
+  }
+
+  /** Fallback for environments without WebCrypto: memory only, never persisted. */
+  setSessionApiKey(key: string): void {
+    this.apiKeyRuntime = key.trim() || null;
   }
 
   /** Gate for anything that talks to the model. */
